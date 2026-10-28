@@ -9,7 +9,7 @@ public sealed record RunOutcome(string DigestPath, string Summary, ScoringResult
 /// One weekly run, the same steps as PLAYBOOK.md: load config, fetch IRB + Federal Register,
 /// dedup, score, write the digest, update STATE.json.
 /// </summary>
-public sealed class RunPipeline(string root, HttpClient http, ClaudeScorer scorer)
+public sealed class RunPipeline(string root, HttpClient http, IScorer scorer)
 {
     public string ProfilePath => Path.Combine(root, "PROFILE.md");
     public string StatePath => Path.Combine(root, "STATE.json");
@@ -145,10 +145,10 @@ public sealed class RunPipeline(string root, HttpClient http, ClaudeScorer score
     private static string Summarize(string today, FetchResult fetched, ScoringResult result)
     {
         var counts = string.Join(", ", Enumerable.Range(0, 4).Reverse()
-            .Select(s => $"{result.Items.Count(i => i.Score == s)}×{s}"));
+            .Select(s => $"score {s}: {result.Items.Count(i => i.Score == s)}"));
         var top = result.Items.FirstOrDefault(i => i.Score >= 2);
         var topLine = top is null ? "nothing above score 1" : $"top: {top.Cite} ({top.Score})";
         var problems = fetched.Problems.Count > 0 ? $" {fetched.Problems.Count} fetch problem(s)." : "";
-        return $"App run {today}: {fetched.IrbIssues.Count} IRB issue(s), {fetched.FedRegDocuments.Count} FR docs. Scores {counts}; {topLine}.{problems}";
+        return $"App run {today}: {fetched.IrbIssues.Count} IRB issue(s), {fetched.FedRegDocuments.Count} FR docs. {counts}; {topLine}.{problems}";
     }
 }

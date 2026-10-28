@@ -18,6 +18,12 @@
                     <TextBlock x:Name="StatusText" Foreground="#666" TextTrimming="CharacterEllipsis" MaxWidth="560" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="Scoring:" VerticalAlignment="Center" Foreground="#666" Margin="0,0,6,0" />
+                    <ComboBox x:Name="ScorerBox" Width="230" VerticalContentAlignment="Center" Margin="0,0,6,0"
+                              SelectionChanged="ScorerBox_SelectionChanged">
+                        <ComboBoxItem Content="Claude subscription (Claude Code)" Tag="ClaudeCode" />
+                        <ComboBoxItem Content="Anthropic API key" Tag="AnthropicApi" />
+                    </ComboBox>
                     <Button x:Name="RunButton" Content="Run now" FontWeight="SemiBold" Click="Run_Click" />
                     <Button x:Name="CancelButton" Content="Cancel" Click="Cancel_Click" Visibility="Collapsed" />
                     <Button Content="Edit profile" Click="EditProfile_Click" ToolTip="Open PROFILE.md: buckets, rubric and guards" />

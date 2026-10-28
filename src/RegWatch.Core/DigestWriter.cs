@@ -24,7 +24,7 @@ public static class DigestWriter
             sb.AppendLine();
         }
 
-        if (!result.Items.Any(i => i.Score >= 2))
+        if (!result.Items.Any(i => i.Score >= 2) && !result.Headline.Contains("Nothing scores 2", StringComparison.OrdinalIgnoreCase))
             sb.AppendLine("**Nothing scores 2 or higher this run.**").AppendLine();
 
         Section(sb, result, 3, "Score 3 — read now");
@@ -36,7 +36,7 @@ public static class DigestWriter
         {
             sb.AppendLine($"## Skip (score 0) — {skips.Count} items");
             foreach (var s in skips)
-                sb.AppendLine($"- [{s.Cite}]({s.Url}) — {s.WhyYouCare}");
+                sb.AppendLine($"- [{DisplayCite(s)}]({s.Url}) — {s.WhyYouCare}");
             sb.AppendLine();
         }
 
@@ -53,13 +53,19 @@ public static class DigestWriter
         {
             var marker = score == 3 ? "🔴" : "🟡";
             var buckets = i.Buckets.Count > 0 ? string.Join(" / ", i.Buckets) : "none";
-            sb.AppendLine($"### {marker} {i.Cite} — relevance {i.Score} ({buckets})");
-            sb.AppendLine($"**Type:** {i.Type} · **Source:** {i.Source} · **IRC:** {i.Irc} · **Comment deadline:** {i.CommentDeadline ?? "n/a"}");
-            sb.AppendLine($"**Link:** {i.Url}");
+            sb.AppendLine($"### {marker} {DisplayCite(i)} — relevance {i.Score} ({buckets})");
+            sb.AppendLine($"**Type:** {i.Type} ({i.Source}) · **IRC:** {i.Irc} · **Comment deadline:** {i.CommentDeadline ?? "n/a"}");
+            sb.AppendLine($"**Source:** {i.Url}");
             sb.AppendLine($"**Plain English:** {i.PlainEnglish}");
             sb.AppendLine($"**Why you care:** {i.WhyYouCare}").AppendLine();
         }
     }
+
+    /// <summary>Federal Register notices often have no guidance number; fall back to "FR &lt;doc&gt;".</summary>
+    internal static string DisplayCite(ScoredItem item) =>
+        string.IsNullOrWhiteSpace(item.Cite) || item.Cite.Equals("not stated", StringComparison.OrdinalIgnoreCase)
+            ? item.Source
+            : item.Cite;
 
     /// <summary>Writes the Markdown digest and a JSON sidecar; returns the Markdown path.</summary>
     public static string Write(string digestsDir, string date, string markdown, ScoringResult result)

@@ -36,6 +36,22 @@ public sealed class DigestAndStateTests : IDisposable
     }
 
     [Fact]
+    public void Render_FallsBackToSourceWhenCiteNotStated()
+    {
+        var result = new ScoringResult
+        {
+            Headline = "h",
+            Items = [new() { Cite = "not stated", Source = "FR 2026-21921", Type = "Notice", Url = "u", Score = 1, Buckets = ["intl_info_returns"] }],
+        };
+
+        var md = DigestWriter.Render("2026-10-28", "w", result, []);
+
+        Assert.Contains("### 🟡 FR 2026-21921 — relevance 1 (intl_info_returns)", md);
+        Assert.Contains("**Type:** Notice (FR 2026-21921)", md);
+        Assert.Contains("**Source:** u", md);
+    }
+
+    [Fact]
     public void Render_SaysPlainlyWhenNothingScoresTwo()
     {
         var md = DigestWriter.Render("2026-11-02", "w", new ScoringResult { Headline = "h" }, []);
@@ -111,6 +127,6 @@ public sealed class DigestAndStateTests : IDisposable
             ["items"] = new JsonArray(new JsonObject { ["cite"] = "X", ["score"] = 7 }),
         }.ToJsonString();
 
-        Assert.Equal(3, ClaudeScorer.ParseResult(json).Items[0].Score);
+        Assert.Equal(3, ScoringPrompt.ParseResult(json).Items[0].Score);
     }
 }

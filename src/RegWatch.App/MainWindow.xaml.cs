@@ -4,7 +4,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Anthropic;
 using Markdig;
 using Microsoft.Web.WebView2.Core;
 using RegWatch.Core;
@@ -72,10 +71,26 @@ public partial class MainWindow : Window
         DeadlinesTab.Header = deadlines.Count > 0 ? $"Comment deadlines ({deadlines.Count})" : "Comment deadlines";
 
         var state = new StateStore(Path.Combine(_root, "STATE.json")).Load();
-        var key = ApiKeyStore.HasKey ? "API key set" : "No API key: choose Set API key before running";
-        StatusText.Text = $"Last run {state.LastRun ?? "never"} · IRB through {state.LastIrbIssue ?? "–"} · FR from {state.LastFedRegDate ?? "–"} · {key}";
+        var settings = AppSettings.Load();
+        var ready = ScorerFactory.Problem(settings) ?? "ready to run";
+        StatusText.Text = $"Last run {state.LastRun ?? "never"} · IRB through {state.LastIrbIssue ?? "–"} · FR from {state.LastFedRegDate ?? "–"} · {ready}";
         StatusText.ToolTip = state.LastRunSummary;
+
+        _loadingSettings = true;
+        ScorerBox.SelectedItem = ScorerBox.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == settings.Scorer.ToString());
+        _loadingSettings = false;
+        KeyButton.Visibility = settings.Scorer == ScorerKind.AnthropicApi ? Visibility.Visible : Visibility.Collapsed;
         KeyButton.Content = ApiKeyStore.HasKey ? "Change API key" : "Set API key";
+    }
+
+    private bool _loadingSettings;
+
+    private void ScorerBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings || ScorerBox.SelectedItem is not ComboBoxItem { Tag: string tag }) return;
+        var updated = AppSettings.Load() with { Scorer = Enum.Parse<ScorerKind>(tag) };
+        updated.Save();
+        Refresh((DigestList.SelectedItem as DigestRow)?.Summary.Path);
     }
 
     private void DigestList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -88,12 +103,13 @@ public partial class MainWindow : Window
 
     private async void Run_Click(object sender, RoutedEventArgs e)
     {
-        var key = ApiKeyStore.Resolve();
-        if (key is null)
-        {
+        var settings = AppSettings.Load();
+        if (settings.Scorer == ScorerKind.AnthropicApi && !ApiKeyStore.HasKey)
             SetKey_Click(sender, e);
-            key = ApiKeyStore.Resolve();
-            if (key is null) return;
+        if (ScorerFactory.Problem(settings) is { } problem)
+        {
+            MessageBox.Show(this, problem, "RegWatch");
+            return;
         }
 
         RunButton.IsEnabled = false;
@@ -106,7 +122,9 @@ public partial class MainWindow : Window
         try
         {
             using var http = RunPipeline.CreateHttpClient();
-            var pipeline = new RunPipeline(_root, http, new ClaudeScorer(new AnthropicClient { ApiKey = key }));
+            var scorer = ScorerFactory.Create(settings);
+            ((IProgress<string>)progress).Report($"Scoring via {scorer.Description}.");
+            var pipeline = new RunPipeline(_root, http, scorer);
             var outcome = await Task.Run(() => pipeline.RunAsync(progress, _runCts.Token));
             ((IProgress<string>)progress).Report(outcome.Summary);
             Refresh(outcome.DigestPath);
