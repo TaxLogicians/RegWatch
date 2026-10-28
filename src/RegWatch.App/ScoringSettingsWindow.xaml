@@ -1,0 +1,173 @@
+<Window x:Class="RegWatch.App.ScoringSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Scoring settings" Height="760" Width="760" MinWidth="620" MinHeight="520"
+        Background="#F7F7F5" FontFamily="Segoe UI" FontSize="13" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+        </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#E2E2DE" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#444" />
+            <Setter Property="Margin" Value="0,10,0,3" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#777" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,3,0,0" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="4,3" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#E2E2DE" BorderThickness="0,1,0,0" Padding="14,10">
+            <DockPanel>
+                <Button DockPanel.Dock="Left" x:Name="TestButton" Content="Test connection" Margin="0" Click="Test_Click"
+                        ToolTip="Scores one sample item with these settings (does not change STATE.json)" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Save" FontWeight="SemiBold" Click="Save_Click" />
+                    <Button Content="Cancel" IsCancel="True" />
+                </StackPanel>
+                <TextBlock x:Name="TestResult" Margin="12,0" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" />
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="16,14,16,4">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Who scores the items" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="RegWatch fetches the IRB and Federal Register itself; the AI only reads that text and scores it against PROFILE.md. Settings are saved for your Windows account only." />
+                        <RadioButton x:Name="ClaudeCodeRadio" GroupName="Scorer" Margin="0,12,0,0" Checked="Scorer_Checked">
+                            <StackPanel>
+                                <TextBlock Text="Claude subscription (Claude Code)" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Hint}" Text="Uses your Claude Pro/Max plan through the claude command-line tool. No per-run cost; includes web search." />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="AnthropicRadio" GroupName="Scorer" Margin="0,10,0,0" Checked="Scorer_Checked">
+                            <StackPanel>
+                                <TextBlock Text="Anthropic API key" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Hint}" Text="Claude via console.anthropic.com, billed per run (well under a dollar). Includes web search." />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="OpenAiRadio" GroupName="Scorer" Margin="0,10,0,0" Checked="Scorer_Checked">
+                            <StackPanel>
+                                <TextBlock Text="OpenAI-compatible or local AI" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Hint}" Text="OpenAI, Ollama, LM Studio, Gemini, OpenRouter, or any server with an OpenAI-style API. No web search, so the final-rule news check is skipped." />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                </Border>
+
+                <!-- Claude Code -->
+                <Border x:Name="ClaudeCodePanel" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Claude subscription" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Label}" Text="Model" />
+                        <ComboBox x:Name="ClaudeCodeModelBox" IsEditable="True" Width="220" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="opus" />
+                            <ComboBoxItem Content="sonnet" />
+                            <ComboBoxItem Content="haiku" />
+                        </ComboBox>
+                        <TextBlock Style="{StaticResource Hint}" Text="An alias for the latest model of that family, or a full model name. Opus judges best; Sonnet and Haiku use less of your plan's limits." />
+                        <TextBlock Style="{StaticResource Label}" Text="claude.exe location" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseClaude_Click" />
+                            <TextBox x:Name="ClaudePathBox" />
+                        </DockPanel>
+                        <TextBlock x:Name="ClaudePathHint" Style="{StaticResource Hint}" />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
+                                   Text="Sign in once in a terminal with: claude auth login (sign in again if a run reports the session expired)." />
+                    </StackPanel>
+                </Border>
+
+                <!-- Anthropic API -->
+                <Border x:Name="AnthropicPanel" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Anthropic API" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Label}" Text="Model" />
+                        <TextBox x:Name="AnthropicModelBox" Width="260" HorizontalAlignment="Left" />
+                        <TextBlock Style="{StaticResource Label}" Text="API key" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="AnthropicKeyStatus" VerticalAlignment="Center" />
+                            <Button Content="Set / change key…" Click="AnthropicKey_Click" Margin="12,0,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- OpenAI-compatible -->
+                <Border x:Name="OpenAiPanel" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="OpenAI-compatible server" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Label}" Text="Preset" />
+                        <ComboBox x:Name="PresetBox" Width="260" HorizontalAlignment="Left" DisplayMemberPath="Name"
+                                  SelectionChanged="Preset_SelectionChanged" />
+                        <TextBlock x:Name="PresetNotes" Style="{StaticResource Hint}" />
+
+                        <TextBlock Style="{StaticResource Label}" Text="Base URL" />
+                        <TextBox x:Name="BaseUrlBox" TextChanged="OpenAiField_Changed" />
+                        <TextBlock Style="{StaticResource Hint}" Text="Up to and including /v1; RegWatch adds /chat/completions." />
+
+                        <TextBlock Style="{StaticResource Label}" Text="Model" />
+                        <TextBox x:Name="OpenAiModelBox" />
+                        <TextBlock x:Name="ModelHint" Style="{StaticResource Hint}" />
+
+                        <TextBlock Style="{StaticResource Label}" Text="API key" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="OpenAiKeyStatus" VerticalAlignment="Center" />
+                            <Button Content="Set / change key…" Click="OpenAiKey_Click" Margin="12,0,0,0" />
+                        </StackPanel>
+                        <TextBlock x:Name="KeyWarning" Style="{StaticResource Hint}" Foreground="Firebrick" />
+
+                        <TextBlock Style="{StaticResource Label}" Text="Structured output" />
+                        <ComboBox x:Name="StructuredBox" Width="420" HorizontalAlignment="Left">
+                            <ComboBoxItem Tag="JsonSchema" Content="JSON schema (best; OpenAI, Gemini, LM Studio, recent Ollama)" />
+                            <ComboBoxItem Tag="JsonObject" Content="JSON mode (schema in the prompt)" />
+                            <ComboBoxItem Tag="PromptOnly" Content="Prompt only (for servers that reject response_format)" />
+                        </ComboBox>
+                        <TextBlock Style="{StaticResource Hint}" Text="If a test fails with an error about response_format, step down one option." />
+
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource Label}" Text="Items per request" />
+                                <TextBox x:Name="ItemsPerRequestBox" Width="90" HorizontalAlignment="Left" />
+                                <TextBlock Style="{StaticResource Hint}" Width="260" HorizontalAlignment="Left"
+                                           Text="0 = send the whole run at once. For local models with small context windows try 15; each IRB issue goes on its own." />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource Label}" Text="Timeout (minutes)" />
+                                <TextBox x:Name="TimeoutBox" Width="90" HorizontalAlignment="Left" />
+                                <TextBlock Style="{StaticResource Hint}" Width="220" HorizontalAlignment="Left"
+                                           Text="Per request. Local models on a laptop can be slow." />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Background="#FFF8E5" BorderBrush="#EBD9A6" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,14,0,0">
+                            <TextBlock TextWrapping="Wrap" Foreground="#6B5A1F" FontSize="12"
+                                       Text="PROFILE.md was calibrated against Claude. Other models, especially small local ones, may score borderline items differently or miss false-positive guards. Compare a few digests before relying on one." />
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

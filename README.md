@@ -44,7 +44,10 @@ dedups by document number, including across runs via `seen_documents` in STATE.j
 Claude call scores everything against PROFILE.md, with a web search for the final-rule
 sanity check. The **Scoring** dropdown picks how that call is made: **Claude subscription**
 (default; runs `claude -p` and needs the Claude Code CLI signed in with `claude auth login`)
-or **Anthropic API key** (`claude-opus-5-5`, billed per run). The choice is saved per
+or **Anthropic API key** (`claude-opus-5-5`, billed per run), or **OpenAI-compatible /
+local AI** (OpenAI, Ollama, LM Studio, Gemini, OpenRouter or any OpenAI-style server; no
+web search). **Advanced…** sets models, keys, base URL, structured-output mode, batching
+for small local models, and has a Test connection button. The choice is saved per
 Windows user in `%APPDATA%\RegWatch\settings.json`. The app then writes `digests/<date>.md` (plus a `.json`
 sidecar) in the same card format. PROFILE.md is still the only file you edit to calibrate.
 

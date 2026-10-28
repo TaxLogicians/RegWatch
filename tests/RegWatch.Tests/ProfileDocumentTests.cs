@@ -10,7 +10,10 @@ public class ProfileDocumentTests
         return File.ReadAllText(path);
     }
 
-    private const string Small = """
+    // Normalized so the test does not depend on how git checked this file out.
+    private static readonly string Small = SmallSource.Replace("\r\n", "\n");
+
+    private const string SmallSource = """
         # Profile
 
         ## Topic buckets

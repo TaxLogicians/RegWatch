@@ -10,11 +10,11 @@ namespace RegWatch.Core;
 /// the judgment (bucket match, guards, plain-English summary); the app does fetching, dedup
 /// and layout.
 /// </summary>
-public sealed class ClaudeScorer(AnthropicClient client) : IScorer
+public sealed class ClaudeScorer(AnthropicClient client, string model = ClaudeScorer.DefaultModel) : IScorer
 {
-    public const string Model = "claude-opus-5-5";
+    public const string DefaultModel = "claude-opus-5-5";
 
-    public string Description => "Anthropic API key";
+    public string Description => $"Anthropic API key ({model})";
 
     public async Task<ScoringResult> ScoreAsync(
         string profile, FetchResult fetched, IProgress<string>? log = null, CancellationToken ct = default)
@@ -38,7 +38,7 @@ public sealed class ClaudeScorer(AnthropicClient client) : IScorer
     {
         var parameters = new MessageCreateParams
         {
-            Model = Model,
+            Model = model,
             MaxTokens = 64000,
             Betas = ["server-side-fallback-2026-07-01"],
             Fallbacks = new Default(),
@@ -53,7 +53,7 @@ public sealed class ClaudeScorer(AnthropicClient client) : IScorer
             Messages = [new BetaUserMessageParam { Content = payload }],
         };
 
-        log?.Report($"Scoring with {Model} via API{(useWebSearch ? " (web search on)" : "")}…");
+        log?.Report($"Scoring with {model} via API{(useWebSearch ? " (web search on)" : "")}…");
         var message = await client.Beta.Messages.CreateStreaming(parameters, ct).Aggregate();
         log?.Report($"Scored: {message.Usage.InputTokens:N0} input / {message.Usage.OutputTokens:N0} output tokens.");
 

@@ -79,8 +79,6 @@ public partial class MainWindow : Window
         _loadingSettings = true;
         ScorerBox.SelectedItem = ScorerBox.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == settings.Scorer.ToString());
         _loadingSettings = false;
-        KeyButton.Visibility = settings.Scorer == ScorerKind.AnthropicApi ? Visibility.Visible : Visibility.Collapsed;
-        KeyButton.Content = ApiKeyStore.HasKey ? "Change API key" : "Set API key";
     }
 
     private bool _loadingSettings;
@@ -104,12 +102,16 @@ public partial class MainWindow : Window
     private async void Run_Click(object sender, RoutedEventArgs e)
     {
         var settings = AppSettings.Load();
-        if (settings.Scorer == ScorerKind.AnthropicApi && !ApiKeyStore.HasKey)
-            SetKey_Click(sender, e);
-        if (ScorerFactory.Problem(settings) is { } problem)
+        if (ScorerFactory.Problem(settings) is not null)
         {
-            MessageBox.Show(this, problem, "RegWatch");
-            return;
+            // Open the settings so the missing piece (key, URL, model) can be filled in.
+            Advanced_Click(sender, e);
+            settings = AppSettings.Load();
+            if (ScorerFactory.Problem(settings) is { } problem)
+            {
+                MessageBox.Show(this, problem, "RegWatch");
+                return;
+            }
         }
 
         RunButton.IsEnabled = false;
@@ -149,9 +151,9 @@ public partial class MainWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => _runCts?.Cancel();
 
-    private void SetKey_Click(object sender, RoutedEventArgs e)
+    private void Advanced_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ApiKeyWindow { Owner = this };
+        var dialog = new ScoringSettingsWindow(Path.Combine(_root, "PROFILE.md")) { Owner = this };
         if (dialog.ShowDialog() == true) Refresh((DigestList.SelectedItem as DigestRow)?.Summary.Path);
     }
 

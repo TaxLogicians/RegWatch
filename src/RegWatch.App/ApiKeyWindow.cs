@@ -4,21 +4,21 @@ using RegWatch.Core;
 
 namespace RegWatch.App;
 
-/// <summary>Small dialog that stores the Anthropic API key with DPAPI via <see cref="ApiKeyStore"/>.</summary>
+/// <summary>Small dialog that stores one provider's API key with DPAPI via <see cref="ApiKeyStore"/>.</summary>
 public sealed class ApiKeyWindow : Window
 {
     private readonly PasswordBox _box = new() { Margin = new Thickness(0, 8, 0, 12), Padding = new Thickness(4) };
 
-    public ApiKeyWindow()
+    public ApiKeyWindow(ApiKeyStore store, string providerName, string whereToGetOne)
     {
-        Title = "Anthropic API key";
-        Width = 460;
+        Title = $"{providerName} API key";
+        Width = 480;
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
-        var envNote = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY") is { Length: > 0 }
-            ? "\n\nANTHROPIC_API_KEY is set in your environment and takes precedence over a saved key."
+        var envNote = store.EnvVarIsSet
+            ? $"\n\n{store.EnvVar} is set in your environment and takes precedence over a saved key."
             : "";
 
         var save = new Button { Content = "Save", IsDefault = true, Padding = new Thickness(14, 4, 14, 4) };
@@ -27,13 +27,17 @@ public sealed class ApiKeyWindow : Window
 
         save.Click += (_, _) =>
         {
-            if (_box.Password.Trim().Length == 0) return;
-            ApiKeyStore.Save(_box.Password);
+            if (_box.Password.Trim().Length == 0)
+            {
+                MessageBox.Show(this, "Paste a key first (Ctrl+V), then click Save.", Title);
+                return;
+            }
+            store.Save(_box.Password);
             DialogResult = true;
         };
         clear.Click += (_, _) =>
         {
-            ApiKeyStore.Clear();
+            store.Clear();
             DialogResult = true;
         };
 
@@ -46,8 +50,8 @@ public sealed class ApiKeyWindow : Window
         panel.Children.Add(new TextBlock
         {
             TextWrapping = TextWrapping.Wrap,
-            Text = "Paste an API key from console.anthropic.com. It is encrypted for your Windows account " +
-                   $"(DPAPI) and saved to {ApiKeyStore.KeyPath}. A weekly run costs well under a dollar." + envNote,
+            Text = $"Paste a key from {whereToGetOne}. It is encrypted for your Windows account " +
+                   $"(DPAPI) and saved to {store.KeyPath}." + envNote,
         });
         panel.Children.Add(_box);
         panel.Children.Add(buttons);

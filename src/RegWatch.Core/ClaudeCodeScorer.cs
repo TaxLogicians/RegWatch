@@ -10,11 +10,13 @@ namespace RegWatch.Core;
 /// Claude Pro/Max subscription instead of an API key. Same prompt and schema as
 /// <see cref="ClaudeScorer"/>; the CLI is limited to the WebSearch tool.
 /// </summary>
-public sealed class ClaudeCodeScorer(string claudePath) : IScorer
+public sealed class ClaudeCodeScorer(string claudePath, string model = ClaudeCodeScorer.DefaultModel) : IScorer
 {
+    public const string DefaultModel = "opus";
+
     public static readonly TimeSpan Timeout = TimeSpan.FromMinutes(20);
 
-    public string Description => "Claude subscription (Claude Code)";
+    public string Description => $"Claude subscription (Claude Code, {model})";
 
     public async Task<ScoringResult> ScoreAsync(
         string profile, FetchResult fetched, IProgress<string>? log = null, CancellationToken ct = default)
@@ -46,7 +48,7 @@ public sealed class ClaudeCodeScorer(string claudePath) : IScorer
                 "--system-prompt-file", promptFile,
                 "--tools", "WebSearch",
                 "--allowedTools", "WebSearch",
-                "--model", "opus",
+                "--model", model,
                 "--effort", "high",
                 "--no-session-persistence",
                 "--setting-sources", "",
