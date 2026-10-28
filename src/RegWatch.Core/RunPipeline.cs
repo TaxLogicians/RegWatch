@@ -6,10 +6,10 @@ namespace RegWatch.Core;
 public sealed record RunOutcome(string DigestPath, string Summary, ScoringResult Result);
 
 /// <summary>
-/// One weekly run, the same steps as PLAYBOOK.md: load config, fetch IRB + Federal Register,
-/// dedup, score, write the digest, update STATE.json.
+/// One weekly run, the same steps as PLAYBOOK.md: load config, fetch IRB + Federal Register
+/// (+ commentary feeds), dedup, score, write the digest, update STATE.json.
 /// </summary>
-public sealed class RunPipeline(string root, HttpClient http, IScorer scorer)
+public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IReadOnlyList<FeedSource>? feeds = null)
 {
     public string ProfilePath => Path.Combine(root, "PROFILE.md");
     public string StatePath => Path.Combine(root, "STATE.json");
@@ -23,7 +23,9 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer)
 
     public static HttpClient CreateHttpClient()
     {
-        var http = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+        // Feeds are often served gzip/brotli-compressed.
+        var handler = new HttpClientHandler { AutomaticDecompression = System.Net.DecompressionMethods.All };
+        var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
         // irs.gov rejects requests with no user agent.
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("RegWatch", "1.0"));
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(+local triage digest)"));
@@ -41,19 +43,23 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer)
         var today = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         var fetched = await FetchAsync(state, log, ct);
-        log?.Report($"Fetched {fetched.IrbIssues.Count} IRB issue(s), {fetched.FedRegDocuments.Count} new Federal Register document(s).");
+        log?.Report($"Fetched {fetched.IrbIssues.Count} IRB issue(s), {fetched.FedRegDocuments.Count} new Federal Register document(s), {fetched.CommentaryItems.Count} commentary article(s).");
 
         ScoringResult result;
-        if (fetched.IrbIssues.Count == 0 && fetched.FedRegDocuments.Count == 0)
+        if (fetched.IsEmpty)
         {
-            result = new ScoringResult { Headline = "No new IRB issues or Federal Register documents since the last run." };
+            result = new ScoringResult { Headline = "No new IRB issues, Federal Register documents or commentary since the last run." };
         }
         else
         {
             result = await scorer.ScoreAsync(profile, fetched, log, ct);
         }
 
-        var sorted = result with { Items = result.Items.OrderByDescending(i => i.Score).ThenBy(i => i.Cite).ToList() };
+        var sorted = result with
+        {
+            Items = result.Items.OrderByDescending(i => i.Score).ThenBy(i => i.Cite).ToList(),
+            Press = result.Press.OrderByDescending(p => p.Score).ThenByDescending(p => p.Published).ToList(),
+        };
         var window = Window(state, fetched);
         var markdown = DigestWriter.Render(today, window, sorted, fetched.Problems);
         var path = DigestWriter.Write(DigestsDir, today, markdown, sorted);
@@ -67,6 +73,9 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer)
         if (!fetched.Problems.Any(p => p.StartsWith("Federal Register", StringComparison.Ordinal)))
             state.LastFedRegDate = today;
         state.AddSeen(fetched.FedRegDocuments.Select(d => d.DocumentNumber));
+        foreach (var (feedUrl, newest) in fetched.FeedBookmarkUpdates)
+            state.SetFeedBookmark(feedUrl, newest);
+        state.AddSeenFeedItems(fetched.CommentaryItems.SelectMany(c => c.Id.Split('\u0001')));
         state.LastRun = today;
         state.LastRunSummary = summary;
         store.Save(state);
@@ -128,7 +137,37 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer)
 
         var seen = state.SeenDocuments;
         var newDocs = FederalRegisterClient.Dedup(docs).Where(d => !seen.Contains(d.DocumentNumber)).ToList();
-        return new FetchResult(issues, newDocs, problems);
+
+        var (commentary, bookmarks) = await FetchFeedsAsync(state, problems, log, ct);
+        return new FetchResult(issues, newDocs, problems, commentary, bookmarks);
+    }
+
+    private async Task<(List<FeedItem>, Dictionary<string, DateTimeOffset>)> FetchFeedsAsync(
+        RunState state, List<string> problems, IProgress<string>? log, CancellationToken ct)
+    {
+        var client = new FeedClient(http);
+        var seen = state.SeenFeedItems;
+        var items = new List<FeedItem>();
+        var bookmarks = new Dictionary<string, DateTimeOffset>();
+
+        foreach (var feed in (feeds ?? []).Where(f => f.Enabled))
+        {
+            try
+            {
+                log?.Report($"Reading {feed.Name}…");
+                var fresh = (await client.GetItemsAsync(feed, state.FeedBookmark(feed.Url), ct: ct))
+                    .Where(i => !seen.Contains(i.Id))
+                    .ToList();
+                items.AddRange(fresh);
+                if (fresh.Select(i => i.Published).Max() is { } newest) bookmarks[feed.Url] = newest;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or System.Xml.XmlException or TaskCanceledException)
+            {
+                problems.Add($"Feed {feed.Name}: {ex.Message}");
+            }
+        }
+
+        return (FeedClient.MergeDuplicates(items), bookmarks);
     }
 
     private static string Window(RunState state, FetchResult fetched)
@@ -139,7 +178,8 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer)
             1 => $"IRB {fetched.IrbIssues[0].Issue}",
             _ => $"IRB {fetched.IrbIssues[0].Issue} → {fetched.IrbIssues[^1].Issue}",
         };
-        return $"{irb}; Federal Register IRS + Treasury + FinCEN published on/after {state.LastFedRegDate ?? "the last 30 days"} ({fetched.FedRegDocuments.Count} new documents).";
+        var press = fetched.CommentaryItems.Count > 0 ? $"; {fetched.CommentaryItems.Count} commentary article(s)" : "";
+        return $"{irb}; Federal Register IRS + Treasury + FinCEN published on/after {state.LastFedRegDate ?? "the last 30 days"} ({fetched.FedRegDocuments.Count} new documents){press}.";
     }
 
     private static string Summarize(string today, FetchResult fetched, ScoringResult result)
@@ -149,6 +189,7 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer)
         var top = result.Items.FirstOrDefault(i => i.Score >= 2);
         var topLine = top is null ? "nothing above score 1" : $"top: {top.Cite} ({top.Score})";
         var problems = fetched.Problems.Count > 0 ? $" {fetched.Problems.Count} fetch problem(s)." : "";
-        return $"App run {today}: {fetched.IrbIssues.Count} IRB issue(s), {fetched.FedRegDocuments.Count} FR docs. {counts}; {topLine}.{problems}";
+        var press = result.Press.Count(p => p.Score >= 1);
+        return $"App run {today}: {fetched.IrbIssues.Count} IRB issue(s), {fetched.FedRegDocuments.Count} FR docs, {fetched.CommentaryItems.Count} articles ({press} relevant). {counts}; {topLine}.{problems}";
     }
 }

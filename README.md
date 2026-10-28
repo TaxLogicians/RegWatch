@@ -11,6 +11,11 @@ dated digest you can skim in a minute.
 **Sources**
 - **Internal Revenue Bulletin** — irs.gov/irb (Rev. Ruls, Rev. Procs, Notices, TDs, Announcements)
 - **Federal Register API** — IRS + Treasury (proposed/final regs, notices, **comment deadlines**)
+- **Commentary feeds** (app only) — The Tax Adviser and Journal of Accountancy (TAX category)
+  built in, plus any RSS/Atom feed added under **Sources…** (paste a site address; the app
+  finds its feed). Scored like everything else but listed under **In the press**, and linked
+  to the IRB/FR card an article discusses. Only headlines, short summaries and links are kept.
+  Tax Notes blocks automated readers, so it cannot be added.
 
 ## Files
 - **`PROFILE.md`** — *edit this to calibrate.* Topic buckets, the 0–3 scoring

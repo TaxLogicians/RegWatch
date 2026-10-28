@@ -77,6 +77,32 @@ public sealed class RunState(JsonObject raw)
         Raw["seen_documents"] = new JsonArray(merged.Select(s => (JsonNode)JsonValue.Create(s)!).ToArray());
     }
 
+    /// <summary>Newest article date already reported, per feed URL.</summary>
+    public DateTimeOffset? FeedBookmark(string feedUrl) =>
+        Raw["feeds"]?[feedUrl] is JsonValue v && v.TryGetValue<string>(out var s)
+        && DateTimeOffset.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var d)
+            ? d : null;
+
+    public void SetFeedBookmark(string feedUrl, DateTimeOffset newest)
+    {
+        if (Raw["feeds"] is not JsonObject feeds) Raw["feeds"] = feeds = [];
+        if (FeedBookmark(feedUrl) is { } existing && existing >= newest) return;
+        feeds[feedUrl] = newest.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+    }
+
+    /// <summary>Feed item ids already reported (guards against feeds that re-date old posts).</summary>
+    public IReadOnlySet<string> SeenFeedItems =>
+        (Raw["seen_feed_items"] as JsonArray ?? [])
+            .Select(n => n?.GetValue<string>())
+            .OfType<string>()
+            .ToHashSet();
+
+    public void AddSeenFeedItems(IEnumerable<string> ids)
+    {
+        var merged = ids.Concat(SeenFeedItems).Distinct().Take(StateStore.SeenLimit);
+        Raw["seen_feed_items"] = new JsonArray(merged.Select(s => (JsonNode)JsonValue.Create(s)!).ToArray());
+    }
+
     private string? Get(string key) =>
         Raw[key] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
 }

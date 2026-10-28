@@ -126,7 +126,7 @@ public partial class MainWindow : Window
             using var http = RunPipeline.CreateHttpClient();
             var scorer = ScorerFactory.Create(settings);
             ((IProgress<string>)progress).Report($"Scoring via {scorer.Description}.");
-            var pipeline = new RunPipeline(_root, http, scorer);
+            var pipeline = new RunPipeline(_root, http, scorer, settings.EffectiveFeeds);
             var outcome = await Task.Run(() => pipeline.RunAsync(progress, _runCts.Token));
             ((IProgress<string>)progress).Report(outcome.Summary);
             Refresh(outcome.DigestPath);
@@ -161,6 +161,9 @@ public partial class MainWindow : Window
         new ProfileEditorWindow(Path.Combine(_root, "PROFILE.md")) { Owner = this }.ShowDialog();
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e) => OpenExternal(_root);
+
+    private void Sources_Click(object sender, RoutedEventArgs e) =>
+        new SourcesWindow { Owner = this }.ShowDialog();
 
     private void Schedule_Click(object sender, RoutedEventArgs e)
     {

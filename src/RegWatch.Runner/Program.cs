@@ -26,12 +26,14 @@ void Log(string line)
 if (dryRun)
 {
     using var http = RunPipeline.CreateHttpClient();
-    var pipeline = new RunPipeline(root, http, scorer: null!);
+    var pipeline = new RunPipeline(root, http, scorer: null!, AppSettings.Load().EffectiveFeeds);
     var fetched = await pipeline.FetchAsync(new Progress<string>(Log));
     var payloadPath = Path.Combine(logDir, $"{DateTime.Now:yyyy-MM-dd}-payload.json");
     File.WriteAllText(payloadPath, ScoringPrompt.BuildPayload(fetched));
     foreach (var issue in fetched.IrbIssues)
         Log($"IRB {issue.Issue}: {issue.Highlights.Length:N0} chars of highlights");
+    foreach (var c in fetched.CommentaryItems)
+        Log($"Article: {c.Source} | {c.Published:yyyy-MM-dd} | {c.Title}");
     foreach (var p in fetched.Problems)
         Log($"Problem: {p}");
     Log($"Dry run: {fetched.IrbIssues.Count} IRB issue(s), {fetched.FedRegDocuments.Count} FR docs; payload {new FileInfo(payloadPath).Length:N0} bytes at {payloadPath}");
@@ -50,7 +52,7 @@ try
     using var http = RunPipeline.CreateHttpClient();
     var scorer = ScorerFactory.Create(settings);
     Log($"Scoring via {scorer.Description}.");
-    var pipeline = new RunPipeline(root, http, scorer);
+    var pipeline = new RunPipeline(root, http, scorer, settings.EffectiveFeeds);
     var outcome = await pipeline.RunAsync(new Progress<string>(Log));
     Log(outcome.Summary);
     return 0;

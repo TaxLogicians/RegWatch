@@ -183,7 +183,8 @@ public static class ScoringBatches
 {
     public static IReadOnlyList<FetchResult> Split(FetchResult fetched, int itemsPerRequest)
     {
-        if (itemsPerRequest <= 0 || fetched.IrbIssues.Count + fetched.FedRegDocuments.Count <= itemsPerRequest)
+        var total = fetched.IrbIssues.Count + fetched.FedRegDocuments.Count + fetched.CommentaryItems.Count;
+        if (itemsPerRequest <= 0 || total <= itemsPerRequest)
             return [fetched];
 
         var batches = new List<FetchResult>();
@@ -192,6 +193,8 @@ public static class ScoringBatches
             batches.Add(new FetchResult([issue], [], fetched.Problems));
         foreach (var chunk in fetched.FedRegDocuments.Chunk(itemsPerRequest))
             batches.Add(new FetchResult([], chunk, fetched.Problems));
+        foreach (var chunk in fetched.CommentaryItems.Chunk(itemsPerRequest))
+            batches.Add(new FetchResult([], [], fetched.Problems, chunk));
         return batches;
     }
 
@@ -215,6 +218,7 @@ public static class ScoringBatches
             Headline = headline,
             Notes = [.. results.SelectMany(r => r.Notes).Distinct(), $"Scored in {results.Count} batches; IRB/Federal Register duplicates across batches may not be merged."],
             Items = items,
+            Press = results.SelectMany(r => r.Press).GroupBy(p => p.Url).Select(g => g.OrderByDescending(p => p.Score).First()).ToList(),
         };
     }
 }

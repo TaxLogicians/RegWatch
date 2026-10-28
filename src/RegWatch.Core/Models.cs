@@ -23,7 +23,18 @@ public sealed record FedRegDocument(
 public sealed record FetchResult(
     IReadOnlyList<IrbIssue> IrbIssues,
     IReadOnlyList<FedRegDocument> FedRegDocuments,
-    IReadOnlyList<string> Problems);
+    IReadOnlyList<string> Problems,
+    IReadOnlyList<FeedItem>? Commentary = null,
+    IReadOnlyDictionary<string, DateTimeOffset>? FeedBookmarks = null)
+{
+    /// <summary>New articles from the commentary feeds (secondary sources).</summary>
+    public IReadOnlyList<FeedItem> CommentaryItems => Commentary ?? [];
+
+    /// <summary>Newest article date per feed URL, for feeds that were read successfully.</summary>
+    public IReadOnlyDictionary<string, DateTimeOffset> FeedBookmarkUpdates => FeedBookmarks ?? new Dictionary<string, DateTimeOffset>();
+
+    public bool IsEmpty => IrbIssues.Count == 0 && FedRegDocuments.Count == 0 && CommentaryItems.Count == 0;
+}
 
 /// <summary>One scored item, as returned by the scorer (snake_case matches the JSON schema).</summary>
 public sealed record ScoredItem
@@ -40,10 +51,29 @@ public sealed record ScoredItem
     [JsonPropertyName("why_you_care")] public string WhyYouCare { get; init; } = "";
 }
 
+/// <summary>One scored commentary article (The Tax Adviser, JofA, a custom feed).</summary>
+public sealed record PressItem
+{
+    [JsonPropertyName("title")] public string Title { get; init; } = "";
+    [JsonPropertyName("source")] public string Source { get; init; } = "";
+    [JsonPropertyName("url")] public string Url { get; init; } = "";
+    [JsonPropertyName("published")] public string? Published { get; init; }
+    [JsonPropertyName("score")] public int Score { get; init; }
+    [JsonPropertyName("buckets")] public IReadOnlyList<string> Buckets { get; init; } = [];
+
+    /// <summary>Cite of the IRB / Federal Register item the article discusses (e.g. "T.D. 10060"), when it names one.</summary>
+    [JsonPropertyName("related_cite")] public string? RelatedCite { get; init; }
+
+    [JsonPropertyName("why_you_care")] public string WhyYouCare { get; init; } = "";
+}
+
 /// <summary>The scorer's full answer for a run.</summary>
 public sealed record ScoringResult
 {
     [JsonPropertyName("headline")] public string Headline { get; init; } = "";
     [JsonPropertyName("notes")] public IReadOnlyList<string> Notes { get; init; } = [];
     [JsonPropertyName("items")] public IReadOnlyList<ScoredItem> Items { get; init; } = [];
+
+    /// <summary>Commentary articles; missing in digests scored before feeds existed.</summary>
+    [JsonPropertyName("press")] public IReadOnlyList<PressItem> Press { get; init; } = [];
 }

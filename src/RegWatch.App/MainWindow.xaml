@@ -30,6 +30,7 @@
                     <Button x:Name="RunButton" Content="Run now" FontWeight="SemiBold" Click="Run_Click" />
                     <Button x:Name="CancelButton" Content="Cancel" Click="Cancel_Click" Visibility="Collapsed" />
                     <Button Content="Edit profile" Click="EditProfile_Click" ToolTip="Edit topic buckets, weights and guards (saved to PROFILE.md)" />
+                    <Button Content="Sources…" Click="Sources_Click" ToolTip="Commentary feeds: The Tax Adviser, JofA, and your own" />
                     <Button Content="Open folder" Click="OpenFolder_Click" />
                     <Button Content="Schedule weekly" Click="Schedule_Click" ToolTip="Create or update a Windows Task Scheduler task (Mondays 19:00)" />
                 </StackPanel>

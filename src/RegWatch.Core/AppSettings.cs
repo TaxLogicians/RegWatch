@@ -64,6 +64,12 @@ public sealed record AppSettings
 
     public OpenAiCompatibleSettings OpenAi { get; init; } = new();
 
+    /// <summary>Commentary feeds; null (settings from before feeds existed) means the built-in defaults.</summary>
+    public IReadOnlyList<FeedSource>? Feeds { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<FeedSource> EffectiveFeeds => Feeds ?? FeedSource.Defaults;
+
     public static string SettingsPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RegWatch", "settings.json");
 
