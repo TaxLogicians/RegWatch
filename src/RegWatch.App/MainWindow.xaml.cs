@@ -155,7 +155,8 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() == true) Refresh((DigestList.SelectedItem as DigestRow)?.Summary.Path);
     }
 
-    private void EditProfile_Click(object sender, RoutedEventArgs e) => OpenExternal(Path.Combine(_root, "PROFILE.md"));
+    private void EditProfile_Click(object sender, RoutedEventArgs e) =>
+        new ProfileEditorWindow(Path.Combine(_root, "PROFILE.md")) { Owner = this }.ShowDialog();
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e) => OpenExternal(_root);
 

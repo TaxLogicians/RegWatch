@@ -30,7 +30,9 @@ guard. Missing things? Add signal terms or a new bucket.
 `src/` holds a .NET 8 app that does the run itself, with no Claude Code session needed.
 It is published to `C:\Users\dunca\Desktop\RegWatch`:
 - **RegWatch.App.exe**: browse every digest (old agent-written ones too), see upcoming
-  comment deadlines across all digests, use **Run now**, **Edit profile**,
+  comment deadlines across all digests, use **Run now**, **Edit profile** (topic buckets
+  as cards with weights and term chips, guards as a list, plus raw text; saves to
+  PROFILE.md and leaves untouched entries exactly as written),
   **Schedule weekly** (Task Scheduler, Mondays 19:00) and **Set API key**
   (Anthropic key, DPAPI-encrypted in `%APPDATA%\RegWatch`).
 - **RegWatch.Runner.exe**: the headless run that Task Scheduler calls; it logs to `logs/`.
