@@ -32,7 +32,23 @@ public sealed record FeedSource
     ];
 }
 
-/// <summary>One article from a commentary feed; only the headline, a short summary and the link are kept.</summary>
+/// <summary>What an item from a source is, so the scorer and the digest can describe it accurately.</summary>
+public static class FeedItemKind
+{
+    /// <summary>An article from a professional publication: a secondary source.</summary>
+    public const string Commentary = "commentary";
+
+    /// <summary>An IRS or Treasury news release: an announcement, not guidance.</summary>
+    public const string Announcement = "announcement";
+
+    /// <summary>A Tax Court opinion: primary authority (only T.C. opinions are precedential).</summary>
+    public const string Opinion = "opinion";
+
+    /// <summary>An IRS written determination (letter ruling, TAM, CCA): primary, but not precedent.</summary>
+    public const string Ruling = "ruling";
+}
+
+/// <summary>One item from a source other than the IRB and Federal Register; only the headline, a short summary and the link are kept.</summary>
 public sealed record FeedItem(
     string Source,
     string Id,
@@ -40,7 +56,15 @@ public sealed record FeedItem(
     string Url,
     DateTimeOffset? Published,
     IReadOnlyList<string> Categories,
-    string Summary);
+    string Summary,
+    string Kind = FeedItemKind.Commentary);
+
+/// <summary>
+/// One source read: the new items that passed its filters, and the newest date the read
+/// examined, kept or not. The bookmark moves to <see cref="Newest"/>, so a source whose filter
+/// keeps nothing for weeks does not re-read a growing window.
+/// </summary>
+public sealed record FeedRead(IReadOnlyList<FeedItem> Items, DateTimeOffset? Newest);
 
 public sealed record FeedDiscovery(string FeedUrl, string Title, IReadOnlyList<FeedItem> Sample, IReadOnlyList<string> Categories);
 
@@ -59,29 +83,57 @@ public sealed partial class FeedClient(HttpClient http)
     /// so older pages are read until the bookmark is reached.
     /// </summary>
     public async Task<IReadOnlyList<FeedItem>> GetItemsAsync(
+        FeedSource source, DateTimeOffset? since, int firstRunDays = 14, CancellationToken ct = default) =>
+        (await ReadAsync(source, since, firstRunDays, ct)).Items;
+
+    /// <summary>As <see cref="GetItemsAsync"/>, plus the newest date examined (for the bookmark).</summary>
+    public async Task<FeedRead> ReadAsync(
         FeedSource source, DateTimeOffset? since, int firstRunDays = 14, CancellationToken ct = default)
     {
         var cutoff = since ?? DateTimeOffset.UtcNow.AddDays(-firstRunDays);
         var items = new List<FeedItem>();
+        Func<FeedItem, bool> keep = _ => true;
+        DateTimeOffset? examined = null;
 
         if (IrsNewsClient.Handles(source.Url))
+        {
             items.AddRange(await IrsNewsClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, ct));
+        }
         else if (WrittenDeterminationsClient.Handles(source.Url))
-            items.AddRange(await WrittenDeterminationsClient.GetItemsAsync(http, source.Name, cutoff, Core, ct));
+        {
+            items.AddRange(await WrittenDeterminationsClient.GetItemsAsync(http, source.Name, cutoff, ct));
+            keep = i => WrittenDeterminationsClient.IsCore(i, Core);
+        }
         else if (TaxCourtClient.Handles(source.Url))
-            items.AddRange(await TaxCourtClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, Core, ct));
+        {
+            // The search itself is narrowed, so the window it covered stands in for the newest
+            // date seen. Back a day, since opinions can be indexed after their filing time.
+            if (!Core.IsEmpty)
+            {
+                items.AddRange(await TaxCourtClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, Core, ct));
+                examined = DateTimeOffset.UtcNow.AddDays(-1);
+            }
+        }
         else if (TreasuryPressClient.Handles(source.Url))
-            items.AddRange(await TreasuryPressClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, Core, ct));
+        {
+            items.AddRange(await TreasuryPressClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, ct));
+            keep = i => TreasuryPressClient.IsKept(i, Core);
+        }
         else
+        {
             await ReadFeedPagesAsync(source, cutoff, items, ct);
+        }
 
-        return items
-            .Where(i => i.Published is null || i.Published > cutoff)
+        var recent = items.Where(i => i.Published is null || i.Published > cutoff).ToList();
+        var newest = recent.Select(i => i.Published).Append(examined).Max();
+        var kept = recent
+            .Where(keep)
             .Where(i => source.Categories.Count == 0
                 || i.Categories.Any(c => source.Categories.Contains(c, StringComparer.OrdinalIgnoreCase)))
             .GroupBy(i => i.Id)
             .Select(g => g.First())
             .ToList();
+        return new FeedRead(kept, newest);
     }
 
     private async Task ReadFeedPagesAsync(FeedSource source, DateTimeOffset cutoff, List<FeedItem> items, CancellationToken ct)

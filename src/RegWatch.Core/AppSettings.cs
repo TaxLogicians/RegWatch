@@ -94,22 +94,46 @@ public sealed record AppSettings
     public static string SettingsPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RegWatch", "settings.json");
 
-    public static AppSettings Load()
+    /// <summary>
+    /// Set when settings.json could not be read: the file was moved aside (named here) and
+    /// defaults are in use, so the app can say so instead of the next save quietly replacing it.
+    /// </summary>
+    public static string? LoadProblem { get; private set; }
+
+    public static AppSettings Load() => Load(SettingsPath);
+
+    internal static AppSettings Load(string path)
     {
         try
         {
-            return File.Exists(SettingsPath) ? Parse(File.ReadAllText(SettingsPath)) : new();
+            return File.Exists(path) ? Parse(File.ReadAllText(path)) : new();
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            var aside = $"{path}.unreadable-{DateTime.Now:yyyyMMdd-HHmmss}";
+            try
+            {
+                File.Move(path, aside);
+                LoadProblem = $"RegWatch could not read its settings ({ex.Message}) and is using the defaults. " +
+                              $"The old file was kept as {aside}.";
+            }
+            catch (IOException)
+            {
+                LoadProblem = $"RegWatch could not read {path} ({ex.Message}) and is using the defaults.";
+            }
             return new();
         }
     }
 
-    public void Save()
+    public void Save() => Save(SettingsPath);
+
+    // Written beside the target and moved over it, so a crash mid-write cannot leave half a file.
+    internal void Save(string path)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-        File.WriteAllText(SettingsPath, ToJson());
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var tmp = path + ".tmp";
+        File.WriteAllText(tmp, ToJson());
+        File.Move(tmp, path, overwrite: true);
     }
 
     internal static AppSettings Parse(string json) => JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new();

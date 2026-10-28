@@ -13,6 +13,8 @@ public partial class App : Application
             if (e.Args[i] == "--root") rootArg = e.Args[i + 1];
 
         Theme.Apply(AppSettings.Load().Theme);
+        if (AppSettings.LoadProblem is { } settingsProblem)
+            MessageBox.Show(settingsProblem, "RegWatch", MessageBoxButton.OK, MessageBoxImage.Warning);
 
         var root = RunPipeline.DefaultRoot(rootArg);
         if (!File.Exists(Path.Combine(root, "PROFILE.md")))

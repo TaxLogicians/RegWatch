@@ -68,8 +68,8 @@ settings ───┘     │                               (profile + JSON payl
      and items with the same headline from two feeds are merged.
 3. **Score.** One `IScorer.ScoreAsync(profile, fetched)` call. The scorer returns a
    `ScoringResult`: guidance `items` (cards) and `press` entries (everything from the other
-   sources), each with a score, matched buckets and a one-line reason. If nothing new was fetched,
-   no scorer is called.
+   sources, listed in the digest under "Other sources"), each with a score, matched buckets
+   and a one-line reason. If nothing new was fetched, no scorer is called.
 4. **Write.** `DigestWriter` renders `digests/<date>.md` (a `_2`, `_3` … suffix when that day
    already has one) and saves the raw `ScoringResult` beside it as `.json`.
 5. **Save state.** Bookmarks advance only past what was actually fetched. A Cancel or an exception
@@ -84,10 +84,10 @@ scoring payload to `logs\<date>-payload.json`.
 
 | File | What it holds |
 |---|---|
-| `RunPipeline.cs` | The run (above); `DefaultRoot` (`--root`, then `REGWATCH_ROOT`, then `%USERPROFILE%\RegWatch`); `CreateHttpClient` (decompression, 60 s timeout, a `RegWatch/<version>` User-Agent, which irs.gov requires). |
+| `RunPipeline.cs` | The run (above), holding `run.lock` in the data folder so two runs can't overlap; `DefaultRoot` (`--root`, then `REGWATCH_ROOT`, then `%USERPROFILE%\RegWatch`); `CreateHttpClient` (decompression, 60 s timeout, a `RegWatch/<version>` User-Agent, which irs.gov requires). |
 | `Models.cs` | `IrbIssue`, `FedRegDocument`, `FetchResult`, and the scorer's output records `ScoredItem`, `PressItem` and `ScoringResult`. The JSON names are snake_case to match the scoring schema. |
 | `StateStore.cs` | `STATE.json` as a raw `JsonObject`, so unknown fields survive. `RunState` exposes the bookmarks: `last_irb_issue`, `last_fedreg_date`, `feeds{url: newest date}`, and `seen_documents` / `seen_feed_items` (1,000 each). It saves through a temp file and a move. |
-| `DigestWriter.cs` | Renders the Markdown: run notes, score-3/2/1 sections of `### … — relevance N` cards, "In the press", and a one-line-per-item Skip list. `Covers` links an article to the card it discusses by normalised cite. |
+| `DigestWriter.cs` | Renders the Markdown: run notes, score-3/2/1 sections of `### … — relevance N` cards, "Other sources", and a one-line-per-item Skip list. `Covers` links an article to the card it discusses by normalised cite. |
 | `DigestIndex.cs` | Reads the digests folder back for the app's list (headline and score counts) and the comment-deadline table. It parses the Markdown, not the JSON, so older agent-written digests work too. |
 
 **Sources**
@@ -96,7 +96,7 @@ scoring payload to `logs\<date>-payload.json`.
 |---|---|
 | `IrbClient.cs` | irs.gov/irb index and issue pages (HTML). `IssueComparer` orders "2026-44" style issue ids. |
 | `FederalRegisterClient.cs` | federalregister.gov documents.json API. Agencies: IRS, Treasury, FinCEN. |
-| `FeedClient.cs` | `FeedSource` (name, URL, optional category filter, enabled, built-in) and `FeedSource.Defaults`. Reads RSS 2.0 and Atom, and pages back through WordPress feeds. `DiscoverAsync` finds a site's feed for the Sources window. `GetItemsAsync` sends the built-in page readers below to their own classes, matched by URL. |
+| `FeedClient.cs` | `FeedSource` (name, URL, optional category filter, enabled, built-in) and `FeedSource.Defaults`. Reads RSS 2.0 and Atom, and pages back through WordPress feeds. `DiscoverAsync` finds a site's feed for the Sources window. `ReadAsync` sends the built-in page readers below to their own classes (matched by URL), applies their filters, and returns the kept items with the newest date examined. `FeedItemKind` names what an item is. |
 | `IrsNewsClient.cs` | IRS newsroom current-month page, plus last month's archive page early in a month (HTML; IR-numbered releases only). |
 | `WrittenDeterminationsClient.cs` | irs.gov/written-determinations table (HTML, 100 rows a page, newest first). Rows are merged per ruling, since one ruling can be listed under several UIL codes. A ruling is kept when its UIL section or subject names a core section. |
 | `TaxCourtClient.cs` | The Tax Court's public DAWSON opinion search (JSON). One full-text query per run, for opinions filed since the bookmark: `"section 6048" \| "sec. 6048" \| "Form 3520" \| …`. |
@@ -147,7 +147,7 @@ and dark both work.
 ## Runner (console)
 
 `RegWatch.Runner.exe [--root <folder>] [--dry-run] [--no-notify]` is what the scheduled task runs.
-Exit codes: 0 ok, 1 run failed, 2 scorer not ready. It appends to `logs\<date>.log` and, unless
+Exit codes: 0 ok, 1 run failed, 2 scorer not ready, 3 another run held the lock. It appends to `logs\<date>.log` and, unless
 notifications are off, shows a Windows notification (`Notifier.cs`, a tray balloon on its own STA
 thread). Clicking the notification opens the app.
 
@@ -155,7 +155,7 @@ thread). Clicking the notification opens the app.
 
 | Place | Contents |
 |---|---|
-| Data folder (`%USERPROFILE%\RegWatch` by default) | `PROFILE.md`, `STATE.json`, `digests\`, `logs\`, `feedback.jsonl`, `read.json`. Everything a run reads or writes. |
+| Data folder (`%USERPROFILE%\RegWatch` by default) | `PROFILE.md`, `STATE.json`, `digests\`, `logs\`, `feedback.jsonl`, `read.json`, and `run.lock` while a run is going. Everything a run reads or writes. |
 | `%APPDATA%\RegWatch` | `settings.json` and the DPAPI-encrypted key files. |
 | `%LOCALAPPDATA%\RegWatch\WebView2` | The WebView2 cache. |
 
@@ -165,7 +165,7 @@ profile describes topics, not people.
 
 ## Tests
 
-`dotnet test RegWatch.slnx` runs 108 xUnit tests in a few seconds. None of them touches the
+`dotnet test RegWatch.slnx` runs 130 xUnit tests in a few seconds. None of them touches the
 network.
 - Parsers are tested against saved real pages in `tests/RegWatch.Tests/Fixtures` (IRB, Federal
   Register, feeds, IRS newsroom, letter-ruling table, Tax Court JSON, Treasury JSON). The fixtures
@@ -203,32 +203,37 @@ installer\build.ps1        # needs Inno Setup 6; writes installer\Output\RegWatc
 2. Add a branch in `FeedClient.GetItemsAsync` and an entry in `FeedSource.Defaults`. Existing
    users get it through `EffectiveFeeds`.
 3. Save a fixture and add tests (see `SourceReaderTests.cs`).
-4. If the source isn't commentary, update how `ScoringPrompt` and `DigestWriter` describe it (see
-   the known issues below).
+4. Set each item's `Kind` (`FeedItemKind`). If it is a new kind, describe it in
+   `ScoringPrompt.SystemPrompt` and in the note `DigestWriter` puts above "Other sources".
+5. If the reader narrows what it returns, report the newest date it examined, so the bookmark
+   still moves in weeks when nothing is kept (see `FeedClient.ReadAsync`).
 
 Before adding a site, check it allows automated reading. Tax Notes and irs.gov/downloads/irs-wd
 answer HTTP 403, and RegWatch respects that rather than disguising its requests.
 
-## Known issues (code review, 28 October 2026)
+## Code review, 28 October 2026
 
-Open; none fixed yet:
-- **Digest viewer link handling.** Markdig passes raw HTML through, and links in fetched content
-  are opened with the Windows shell whatever their scheme. It should disable raw HTML and open
-  only http(s) links.
-- **Rulings, Tax Court opinions and Treasury releases are described as commentary** in the scoring
-  prompt and the digest's "In the press" note, although opinions and rulings are primary sources.
-- **Cancel while sources are being read** is treated as a per-source fetch problem, so a run with
-  nothing else new can still write a digest and save `STATE.json`.
-- **A profile term with a parenthetical** ("8975 (+ Schedule A, …)") never becomes "Form 8975" in
-  `ProfileTerms`.
-- **settings.json is not written atomically**, and an unreadable file silently loads as defaults,
-  so the next save loses the user's settings.
-- **No lock between a scheduled run and Run now**, so both can run at once.
-- **Narrowed sources only advance their bookmark when something is kept**, so quiet weeks
-  re-read a growing window.
-- Smaller: `PROFILE.md` is read twice per run; `ClaudeCodeScorer` writes stdin before draining
-  stdout/stderr; the section regex's case-insensitive letter can swallow a following lowercase
-  letter.
+All ten findings are fixed, with tests (`ReviewFixTests.cs` and additions to
+`SourceReaderTests.cs`):
+- **Digest viewer links.** Markdig no longer passes raw HTML through. The viewer loads only its own
+  page (`Links.IsInlinePage`), and only http(s) links reach the browser (`Links.IsWebLink`). Open
+  folder now starts Explorer directly instead of going through the shell.
+- **Source kinds.** Every `FeedItem` has a `Kind` (commentary, announcement, opinion, ruling). The
+  payload sends it as `other_sources[].kind`, the prompt describes each kind, and the digest's
+  section is now "Other sources" (older digests say "In the press") with an accurate note on what
+  opinions and rulings are.
+- **Cancel** while sources are being read now ends the run with nothing written; a source
+  timeout is still just a fetch problem.
+- **Parentheticals** in a profile term are treated as notes, so "8975 (+ Schedule A, …)" gives
+  "Form 8975".
+- **settings.json** is written to a temp file and moved into place. An unreadable file is kept
+  aside as `settings.json.unreadable-<timestamp>`, and the app says so at startup.
+- **One run at a time:** `RunAsync` holds `<data folder>\run.lock`. A second run gets
+  `RunInProgressException`; the Runner logs it and exits with code 3.
+- **Bookmarks** for every source move to the newest date the read examined (`FeedClient.ReadAsync`
+  returns it), not just the newest kept item.
+- Smaller: `PROFILE.md` is read once per run; `ClaudeCodeScorer` drains stdout/stderr before writing
+  the payload and can cancel the write; the section-letter match is upper case only.
 
 Also open (see `BACKLOG.md`): a real test of the API-key and OpenAI-compatible scorers, and a
 licence decision. `LICENSE` currently allows evaluation only.

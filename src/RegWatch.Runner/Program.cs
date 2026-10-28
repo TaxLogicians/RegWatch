@@ -5,7 +5,7 @@ using RegWatch.Runner;
 //   RegWatch.Runner.exe [--root <RegWatch folder>] [--dry-run] [--no-notify]
 // --dry-run fetches and saves the scoring payload to logs\ without calling Claude or touching STATE.json.
 // Unless --no-notify is given or the setting is off, a Windows notification reports the result.
-// Exit codes: 0 ok, 2 scorer not ready (no claude.exe or API key), 1 run failed. Each run appends to <root>\logs\<date>.log.
+// Exit codes: 0 ok, 2 scorer not ready (no claude.exe or API key), 3 another run was in progress, 1 run failed. Each run appends to <root>\logs\<date>.log.
 
 string? rootArg = null;
 for (var i = 0; i < args.Length - 1; i++)
@@ -65,6 +65,12 @@ try
         Notifier.Show(title, text, root);
     }
     return 0;
+}
+catch (RunInProgressException ex)
+{
+    // The other run (usually Run now in the app) writes this week's digest; nothing to report.
+    Log(ex.Message);
+    return 3;
 }
 catch (Exception ex)
 {

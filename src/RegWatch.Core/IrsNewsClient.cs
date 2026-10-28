@@ -49,7 +49,7 @@ public static partial class IrsNewsClient
                 var id = head.Groups["id"].Value;
                 var title = WebUtility.HtmlDecode(m.Groups["title"].Value).Trim();
                 return new FeedItem(sourceName, id, $"{id}: {title}", "https://www.irs.gov" + m.Groups["href"].Value,
-                    ParseDate(head.Groups["date"].Value), [], abstractText[head.Length..].Trim());
+                    ParseDate(head.Groups["date"].Value), [], abstractText[head.Length..].Trim(), FeedItemKind.Announcement);
             })
             .OfType<FeedItem>()
             .GroupBy(i => i.Id)

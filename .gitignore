@@ -12,3 +12,4 @@ logs/
 installer/publish/
 installer/Output/
 read.json
+run.lock

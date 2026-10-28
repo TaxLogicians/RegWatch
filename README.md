@@ -13,7 +13,7 @@ dated digest you can skim in a minute.
 - **Federal Register API** — IRS + Treasury (proposed/final regs, notices, **comment deadlines**)
 - **Commentary feeds** (app only) — The Tax Adviser and Journal of Accountancy (TAX category)
   built in, plus any RSS/Atom feed added under **Settings → Sources…** (paste a site address; the app
-  finds its feed). Scored like everything else but listed under **In the press**, and linked
+  finds its feed). Scored like everything else but listed under **Other sources**, and linked
   to the IRB/FR card an article discusses. Only headlines, short summaries and links are kept.
   Tax Notes blocks automated readers, so it cannot be added.
 - **Page readers** (app only, built in) for sources with no usable feed: IRS news releases

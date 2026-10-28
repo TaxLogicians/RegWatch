@@ -41,8 +41,14 @@ public sealed partial class ProfileTerms
             foreach (var raw in bucket.Terms.Select(t => t.Trim()).Where(t => t.Length > 0))
             {
                 var refs = SectionsIn(raw);
-                if (refs.Count > 0) sections.AddRange(refs);
-                else phrases.Add(FormNumber().IsMatch(raw) ? "Form " + raw : raw);
+                if (refs.Count > 0)
+                {
+                    sections.AddRange(refs);
+                    continue;
+                }
+                // A parenthetical is a note on the term ("8975 (+ Schedule A, …)"), not part of it.
+                var term = Parenthetical().Replace(raw, "").Trim();
+                if (term.Length > 0) phrases.Add(FormNumber().IsMatch(term) ? "Form " + term : term);
             }
         }
         return new ProfileTerms(
@@ -86,9 +92,12 @@ public sealed partial class ProfileTerms
         return bare.TrimStart('0') is { Length: > 0 } s ? s : bare;
     }
 
-    [GeneratedRegex(@"(?:§+|\b(?:sections?|secs?\.|IRC)\s)\s*(?:1\.)?(?<num>\d{2,4}[A-Z]?)(?:\((?<sub>[a-z0-9]{1,3})\))?(?:\s*[–-]\s*(?<end>\d{2,4})\b)?", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:§+|\b(?:sections?|secs?\.|IRC)\s)\s*(?:1\.)?(?<num>\d{2,4}(?-i:[A-Z])?)(?:\((?<sub>[a-z0-9]{1,3})\))?(?:\s*[–-]\s*(?<end>\d{2,4})\b)?", RegexOptions.IgnoreCase)]
     private static partial Regex SectionRef();
 
     [GeneratedRegex(@"^\d{3,4}(-[A-Z]{1,3})?$")]
     private static partial Regex FormNumber();
+
+    [GeneratedRegex(@"\s*\([^)]*(\)|$)")]
+    private static partial Regex Parenthetical();
 }

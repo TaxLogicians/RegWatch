@@ -20,9 +20,9 @@ public static partial class WrittenDeterminationsClient
     public static string PageUrl(int page) =>
         $"{ListUrl}?items_per_page={PageSize}" + (page > 0 ? $"&page={page}" : "");
 
-    /// <summary>Newest first: pages are read until one reaches the bookmark.</summary>
+    /// <summary>Every ruling since the bookmark (pages are read until one reaches it); <see cref="IsCore"/> narrows them.</summary>
     public static async Task<IReadOnlyList<FeedItem>> GetItemsAsync(
-        HttpClient http, string sourceName, DateTimeOffset cutoff, ProfileTerms core, CancellationToken ct = default)
+        HttpClient http, string sourceName, DateTimeOffset cutoff, CancellationToken ct = default)
     {
         var all = new List<FeedItem>();
         for (var page = 0; page < MaxPages; page++)
@@ -32,12 +32,12 @@ public static partial class WrittenDeterminationsClient
             // Rows are merged per ruling, so a full page can give fewer than PageSize items.
             if (rows.Count == 0 || rows.Any(r => r.Published is { } p && p <= cutoff)) break;
         }
-        return Filter(all, core);
+        return all;
     }
 
-    /// <summary>Rulings whose sections (from the UIL codes and the subject) include a core section, or whose subject names a core term.</summary>
-    public static IReadOnlyList<FeedItem> Filter(IEnumerable<FeedItem> items, ProfileTerms core) =>
-        items.Where(i => i.Categories.Any(core.Sections.Contains) || core.Matches(i.Title)).ToList();
+    /// <summary>A ruling whose sections (from the UIL codes and the subject) include a core section, or whose subject names a core term.</summary>
+    public static bool IsCore(FeedItem ruling, ProfileTerms core) =>
+        ruling.Categories.Any(core.Sections.Contains) || core.Matches(ruling.Title);
 
     /// <summary>One item per ruling; a ruling filed under several UIL codes has a row for each, merged here.</summary>
     public static IReadOnlyList<FeedItem> Parse(string html, string sourceName) =>
@@ -66,7 +66,8 @@ public static partial class WrittenDeterminationsClient
                 return new FeedItem(sourceName, "WD " + number,
                     $"Written determination {number}: {(subjects.Count > 0 ? string.Join("; ", subjects) : "no subject given")} (UIL {uilText})",
                     $"https://www.irs.gov/pub/irs-wd/{number}.pdf", released, sections,
-                    $"IRS written determination {number}, Uniform Issue List {uilText}. Not precedent: it applies only to the taxpayer who asked (IRC 6110(k)(3)).");
+                    $"IRS written determination {number}, Uniform Issue List {uilText}. Not precedent: it applies only to the taxpayer who asked (IRC 6110(k)(3)).",
+                    FeedItemKind.Ruling);
             })
             .ToList();
 

@@ -12,15 +12,18 @@ namespace RegWatch.App;
 public static class MarkdownView
 {
     // Digests are written with meaningful line breaks; documents like the guide wrap freely.
+    // Raw HTML is off: digests carry headlines and links from fetched pages, which must stay text.
     private static readonly MarkdownPipeline DigestPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .UseAutoLinks()
         .UseSoftlineBreakAsHardlineBreak()
+        .DisableHtml()
         .Build();
 
     private static readonly MarkdownPipeline DocumentPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .UseAutoLinks()
+        .DisableHtml()
         .Build();
 
     public static async Task InitAsync(WebView2 view)
@@ -30,14 +33,13 @@ public static class MarkdownView
         var env = await CoreWebView2Environment.CreateAsync(userDataFolder: dataDir);
         await view.EnsureCoreWebView2Async(env);
 
-        // Links open in the default browser rather than inside the app.
+        // Web links open in the default browser; every other navigation (file:, UNC, app
+        // protocols) is refused. Only the page itself, loaded by NavigateToString, may load.
         view.CoreWebView2.NavigationStarting += (_, e) =>
         {
-            if (e.Uri.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            {
-                e.Cancel = true;
-                OpenExternal(e.Uri);
-            }
+            if (Links.IsInlinePage(e.Uri)) return;
+            e.Cancel = true;
+            OpenExternal(e.Uri);
         };
         view.CoreWebView2.NewWindowRequested += (_, e) =>
         {
@@ -71,8 +73,12 @@ public static class MarkdownView
     public static void ShowDocument(WebView2 view, string markdown) =>
         view.NavigateToString(Page(Markdown.ToHtml(markdown, DocumentPipeline)));
 
-    public static void OpenExternal(string target) =>
-        Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+    /// <summary>Opens a web link in the default browser; anything that is not http(s) is ignored.</summary>
+    public static void OpenExternal(string target)
+    {
+        if (Links.IsWebLink(target))
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+    }
 
     // System.Text.Json escapes <, > and & by default, so the values are safe inside <script>.
     private static string DigestScript(IReadOnlyDictionary<string, string> marks, string? highlight) => $$"""

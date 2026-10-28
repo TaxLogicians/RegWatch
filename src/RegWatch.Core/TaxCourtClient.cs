@@ -60,7 +60,8 @@ public static class TaxCourtClient
                     $"https://dawson.ustaxcourt.gov/case-detail/{Uri.EscapeDataString(Str(r, "docketNumber") ?? docket)}",
                     filed, [Str(r, "eventCode") ?? ""],
                     title + (judge is not null && !title.Contains(judge, StringComparison.OrdinalIgnoreCase) ? $" (Judge {judge})" : "")
-                    + ". Matched a core term in the full text of the opinion.");
+                    + ". Matched a core term in the full text of the opinion.",
+                    FeedItemKind.Opinion);
             })
             .ToList();
     }

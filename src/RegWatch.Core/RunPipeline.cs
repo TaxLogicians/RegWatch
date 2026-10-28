@@ -5,6 +5,9 @@ namespace RegWatch.Core;
 
 public sealed record RunOutcome(string DigestPath, string Summary, ScoringResult Result);
 
+/// <summary>Another run holds the data folder's run.lock.</summary>
+public sealed class RunInProgressException(string message) : InvalidOperationException(message);
+
 /// <summary>
 /// One weekly run, the same steps as PLAYBOOK.md: load config, fetch IRB + Federal Register
 /// (+ commentary feeds), dedup, score, write the digest, update STATE.json.
@@ -14,6 +17,7 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
     public string ProfilePath => Path.Combine(root, "PROFILE.md");
     public string StatePath => Path.Combine(root, "STATE.json");
     public string DigestsDir => Path.Combine(root, "digests");
+    public string LockPath => Path.Combine(root, "run.lock");
 
     /// <summary>The RegWatch folder: --root / REGWATCH_ROOT, else %USERPROFILE%\RegWatch.</summary>
     public static string DefaultRoot(string? overrideRoot = null) =>
@@ -37,7 +41,13 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
         if (!File.Exists(ProfilePath))
             throw new FileNotFoundException($"PROFILE.md not found in {root}.", ProfilePath);
 
-        var profile = await File.ReadAllTextAsync(ProfilePath, ct);
+        // One run at a time per data folder: a catch-up scheduled run and Run now can otherwise
+        // overlap, scoring the same window twice and racing to save STATE.json.
+        using var runLock = AcquireLock();
+
+        // Read once, so the sources are narrowed with the same profile the scorer sees.
+        var profileText = await File.ReadAllTextAsync(ProfilePath, ct);
+        var profile = profileText;
         if (useFeedback && new FeedbackLog(root).Load() is { Count: > 0 } corrections)
         {
             profile += FeedbackLog.ProfileAddendum(corrections);
@@ -47,7 +57,7 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
         var state = store.Load();
         var today = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-        var fetched = await FetchAsync(state, log, ct);
+        var fetched = await FetchAsync(state, profileText, log, ct);
         log?.Report($"Fetched {fetched.IrbIssues.Count} IRB issue(s), {fetched.FedRegDocuments.Count} new Federal Register document(s), {fetched.CommentaryItems.Count} commentary article(s).");
 
         ScoringResult result;
@@ -89,10 +99,24 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
     }
 
     /// <summary>Fetch step only, against the current bookmarks; writes nothing.</summary>
-    public Task<FetchResult> FetchAsync(IProgress<string>? log = null, CancellationToken ct = default) =>
-        FetchAsync(new StateStore(StatePath).Load(), log, ct);
+    public async Task<FetchResult> FetchAsync(IProgress<string>? log = null, CancellationToken ct = default) =>
+        await FetchAsync(new StateStore(StatePath).Load(),
+            File.Exists(ProfilePath) ? await File.ReadAllTextAsync(ProfilePath, ct) : "", log, ct);
 
-    private async Task<FetchResult> FetchAsync(RunState state, IProgress<string>? log, CancellationToken ct)
+    private FileStream AcquireLock()
+    {
+        try
+        {
+            return new FileStream(LockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.DeleteOnClose);
+        }
+        catch (IOException)
+        {
+            throw new RunInProgressException(
+                $"Another RegWatch run is already in progress for {root} (the scheduled run, or Run now in another window). Try again when it finishes.");
+        }
+    }
+
+    private async Task<FetchResult> FetchAsync(RunState state, string profileText, IProgress<string>? log, CancellationToken ct)
     {
         var problems = new List<string>();
         var issues = new List<IrbIssue>();
@@ -142,15 +166,14 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
         var seen = state.SeenDocuments;
         var newDocs = FederalRegisterClient.Dedup(docs).Where(d => !seen.Contains(d.DocumentNumber)).ToList();
 
-        var (commentary, bookmarks) = await FetchFeedsAsync(state, problems, log, ct);
+        var (commentary, bookmarks) = await FetchFeedsAsync(state, ProfileTerms.From(profileText), problems, log, ct);
         return new FetchResult(issues, newDocs, problems, commentary, bookmarks);
     }
 
     private async Task<(List<FeedItem>, Dictionary<string, DateTimeOffset>)> FetchFeedsAsync(
-        RunState state, List<string> problems, IProgress<string>? log, CancellationToken ct)
+        RunState state, ProfileTerms core, List<string> problems, IProgress<string>? log, CancellationToken ct)
     {
         // Rulings, opinions and Treasury releases are narrowed to the profile's core sections and terms.
-        var core = File.Exists(ProfilePath) ? ProfileTerms.From(await File.ReadAllTextAsync(ProfilePath, ct)) : ProfileTerms.Empty;
         var client = new FeedClient(http) { Core = core };
         var seen = state.SeenFeedItems;
         var items = new List<FeedItem>();
@@ -161,17 +184,18 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
             try
             {
                 log?.Report($"Reading {feed.Name}…");
-                var fresh = (await client.GetItemsAsync(feed, state.FeedBookmark(feed.Url), ct: ct))
-                    .Where(i => !seen.Contains(i.Id))
-                    .ToList();
-                items.AddRange(fresh);
-                if (fresh.Select(i => i.Published).Max() is { } newest) bookmarks[feed.Url] = newest;
+                var read = await client.ReadAsync(feed, state.FeedBookmark(feed.Url), ct: ct);
+                items.AddRange(read.Items.Where(i => !seen.Contains(i.Id)));
+                if (read.Newest is { } newest) bookmarks[feed.Url] = newest;
             }
-            catch (Exception ex) when (ex is HttpRequestException or System.Xml.XmlException or System.Text.Json.JsonException or TaskCanceledException)
+            // A timeout is a problem with that source; the user's Cancel ends the run.
+            catch (Exception ex) when (!ct.IsCancellationRequested
+                && ex is HttpRequestException or System.Xml.XmlException or System.Text.Json.JsonException or TaskCanceledException)
             {
                 problems.Add($"Feed {feed.Name}: {ex.Message}");
             }
         }
+        ct.ThrowIfCancellationRequested();
 
         return (FeedClient.MergeDuplicates(items), bookmarks);
     }

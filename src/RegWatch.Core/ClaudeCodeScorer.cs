@@ -59,9 +59,8 @@ public sealed class ClaudeCodeScorer(string claudePath, string model = ClaudeCod
             using var process = Process.Start(psi)
                 ?? throw new InvalidOperationException($"Could not start {claudePath}.");
 
-            await process.StandardInput.WriteAsync(ScoringPrompt.BuildPayload(fetched));
-            process.StandardInput.Close();
-
+            // Read both output streams before writing the payload: if the CLI fills a pipe
+            // while the payload is still going in, each side would wait on the other.
             var stdout = process.StandardOutput.ReadToEndAsync(ct);
             var stderr = process.StandardError.ReadToEndAsync(ct);
 
@@ -69,6 +68,16 @@ public sealed class ClaudeCodeScorer(string claudePath, string model = ClaudeCod
             timeout.CancelAfter(Timeout);
             try
             {
+                try
+                {
+                    await process.StandardInput.WriteAsync(ScoringPrompt.BuildPayload(fetched).AsMemory(), timeout.Token);
+                    process.StandardInput.Close();
+                }
+                catch (IOException)
+                {
+                    // The CLI exited before reading everything (signed out, bad flag): its own
+                    // message on stdout/stderr says why, so carry on and parse that.
+                }
                 await process.WaitForExitAsync(timeout.Token);
             }
             catch (OperationCanceledException)

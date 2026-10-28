@@ -75,7 +75,7 @@ so the next run simply covers the same window again.
   digests, or to digests where something scored 3, or 2 or 3. Right-click the list to mark
   everything as read.
 - Articles, IRS news releases, letter rulings, Tax Court opinions and Treasury releases appear
-  under **In the press**, linked to the IRB or Federal Register item they discuss.
+  under **Other sources** ("In the press" in older digests), linked to the IRB or Federal Register item they discuss.
 - **Comment deadlines** lists upcoming comment deadlines from every digest. Double-click a row to
   open the Federal Register page.
 
@@ -126,7 +126,7 @@ it to open RegWatch. Turn this off with **Settings → Notify after scheduled ru
 | **Scoring** | Who scores the items (see Getting started). |
 | **Advanced scoring settings…** | Models, API keys, OpenAI or local server details, connection test. |
 | **Scoring feedback…** | Your Too high / Too low / Not relevant marks, and whether they go to the scorer. |
-| **Sources…** | Turn commentary feeds on or off, limit them to categories, or add any site with an RSS/Atom feed. Some sites (Tax Notes, for example) block automated readers and cannot be added. |
+| **Sources…** | Turn sources on or off, limit them to categories, or add any site with an RSS/Atom feed. Some sites (Tax Notes, for example) block automated readers and cannot be added. |
 | **Notify after scheduled runs** | Windows notification when the weekly run finishes. |
 | **Theme** | Match Windows, Light or Dark. |
 
@@ -149,6 +149,11 @@ information is involved at any point.
 - **A run says the Claude session expired:** run `claude auth login` in a terminal, then **Run now**.
 - **A run failed part-way:** read the **Run log**. `STATE.json` was not changed, so just run again.
   An IRB issue that could not be fetched is retried next time.
+- **"Another RegWatch run is already in progress":** the scheduled run (or Run now in another
+  RegWatch window) is still going. Wait for it to finish; its digest appears in the list.
+- **RegWatch says it could not read its settings:** the old `settings.json` was kept beside the new
+  one as `settings.json.unreadable-<date>`, and the defaults are in use. Set your choices again
+  under **Settings**, or send the old file with a bug report.
 - **Scores look off with a local model:** the profile was calibrated against Claude. Compare a few
   digests, or use **Test connection**: the sample item should score 1.
 

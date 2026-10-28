@@ -20,16 +20,17 @@ public static partial class TreasuryPressClient
 
     /// <summary>This year's list, plus last year's when the bookmark falls in last year.</summary>
     public static async Task<IReadOnlyList<FeedItem>> GetItemsAsync(
-        HttpClient http, string sourceName, DateTimeOffset cutoff, DateTime today, ProfileTerms core, CancellationToken ct = default)
+        HttpClient http, string sourceName, DateTimeOffset cutoff, DateTime today, CancellationToken ct = default)
     {
         var items = Parse(await http.GetStringAsync(YearUrl(today.Year), ct), sourceName).ToList();
         if (cutoff.LocalDateTime.Year < today.Year)
             items.AddRange(Parse(await http.GetStringAsync(YearUrl(today.Year - 1), ct), sourceName));
-        return Filter(items, core);
+        return items;
     }
 
-    public static IReadOnlyList<FeedItem> Filter(IEnumerable<FeedItem> items, ProfileTerms core) =>
-        items.Where(i => TaxHeadline().IsMatch(i.Title) || core.Matches(i.Title)).ToList();
+    /// <summary>A tax headline, or one naming a core profile term.</summary>
+    public static bool IsKept(FeedItem release, ProfileTerms core) =>
+        TaxHeadline().IsMatch(release.Title) || core.Matches(release.Title);
 
     public static IReadOnlyList<FeedItem> Parse(string json, string sourceName)
     {
@@ -47,7 +48,8 @@ public static partial class TreasuryPressClient
                 var url = path.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? path : "https://home.treasury.gov" + path;
                 var label = e.TryGetProperty("subcategory", out var sub) ? Str(sub, "title") : null;
                 return new FeedItem(sourceName, url, title, url, published,
-                    label is null ? [] : [label], label is null ? "Treasury press release." : $"Treasury press release ({label}).");
+                    label is null ? [] : [label], label is null ? "Treasury press release." : $"Treasury press release ({label}).",
+                    FeedItemKind.Announcement);
             })
             .OfType<FeedItem>()
             .ToList();

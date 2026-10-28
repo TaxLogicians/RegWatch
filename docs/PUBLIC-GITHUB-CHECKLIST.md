@@ -11,7 +11,7 @@ even if the repo is made private again later.
 - [x] **Commit author is the GitHub no-reply address**, not a personal email.
 - [x] **Nothing under `.claude/` is tracked** (`.claude/settings.local.json` is ignored).
 - [x] **Committed digests contain no commentary text.** They hold only IRB / Federal Register
-      material (US government works, public domain). The "In the press" section (headlines
+      material (US government works, public domain). The "Other sources" section ("In the press" in older digests; headlines
       and short summaries from The Tax Adviser and JofA) has not appeared in a committed digest yet.
 
 ## Decide what goes public
@@ -29,7 +29,7 @@ even if the repo is made private again later.
       deleting a file in a new commit does not remove it from history: if any of the
       above must not be public at all, publish a fresh repo with a squashed first commit
       instead (or rewrite history with `git filter-repo`).
-- [ ] **Future digests.** Once a digest includes "In the press", it holds third-party
+- [ ] **Future digests.** Once a digest includes "Other sources" (or "In the press"), it holds third-party
       headlines and short summaries. Consider adding `digests/` to `.gitignore` in the public repo.
 
 ## Make it usable by others

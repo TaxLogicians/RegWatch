@@ -273,6 +273,10 @@ public partial class MainWindow : Window
         {
             ((IProgress<string>)progress).Report("Cancelled. STATE.json was not changed.");
         }
+        catch (RunInProgressException ex)
+        {
+            ((IProgress<string>)progress).Report(ex.Message);
+        }
         catch (Exception ex)
         {
             ((IProgress<string>)progress).Report($"Run failed: {ex.GetType().Name}: {ex.Message}");
@@ -298,7 +302,8 @@ public partial class MainWindow : Window
     private void EditProfile_Click(object sender, RoutedEventArgs e) =>
         new ProfileEditorWindow(Path.Combine(_root, "PROFILE.md")) { Owner = this }.ShowDialog();
 
-    private void OpenFolder_Click(object sender, RoutedEventArgs e) => OpenExternal(_root);
+    private void OpenFolder_Click(object sender, RoutedEventArgs e) =>
+        Process.Start(new ProcessStartInfo("explorer.exe") { ArgumentList = { _root } });
 
     private void Sources_Click(object sender, RoutedEventArgs e) =>
         new SourcesWindow { Owner = this }.ShowDialog();

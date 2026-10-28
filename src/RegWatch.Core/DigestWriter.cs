@@ -66,15 +66,18 @@ public static class DigestWriter
         }
     }
 
-    /// <summary>Commentary articles: secondary sources, linked back to the guidance cards they discuss.</summary>
+    /// <summary>Items from the other sources (commentary, announcements, opinions, rulings), linked back to the guidance cards they discuss.</summary>
     private static void PressSection(StringBuilder sb, ScoringResult result)
     {
         var relevant = result.Press.Where(p => p.Score >= 1).ToList();
         var skipped = result.Press.Where(p => p.Score == 0).ToList();
         if (relevant.Count == 0 && skipped.Count == 0) return;
 
-        sb.AppendLine($"## In the press — {relevant.Count} relevant article(s)").AppendLine();
-        sb.AppendLine("> Commentary from professional publications (secondary sources) and IRS news releases (announcements, not guidance). Use them to find and understand the guidance, then rely on the primary source.").AppendLine();
+        sb.AppendLine($"## Other sources — {relevant.Count} relevant item(s)").AppendLine();
+        sb.AppendLine("> Commentary from professional publications is a secondary source, and IRS and Treasury news releases are announcements, not guidance. " +
+                      "Tax Court opinions are primary authority, but only T.C. opinions are precedential (memorandum, summary and bench opinions are not), " +
+                      "and IRS letter rulings bind only the taxpayer who asked (IRC 6110(k)(3)). Scores for opinions and rulings rest on the case caption or ruling subject alone. " +
+                      "Read the source before relying on anything here.").AppendLine();
 
         foreach (var p in relevant)
         {

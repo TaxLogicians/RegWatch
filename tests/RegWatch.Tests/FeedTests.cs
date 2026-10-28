@@ -189,11 +189,11 @@ public sealed class FeedTests : IDisposable
         var md = DigestWriter.Render("2026-10-28", "w", result, []);
 
         Assert.Contains("**Also covered by:** [The Tax Adviser: Final regulations clear path for direct IRS card payments](https://tta/1)", md);
-        Assert.Contains("## In the press — 2 relevant article(s)", md);
+        Assert.Contains("## Other sources — 2 relevant item(s)", md);
         Assert.Contains("on TD 10060 (card above)", md);
         Assert.Contains("on Notice 2026-61 (not in this digest)", md);
         Assert.Contains("**Not relevant to the profile (1):** [PCAOB inspection data](https://jofa/1)", md);
-        Assert.True(md.IndexOf("## In the press", StringComparison.Ordinal) < md.IndexOf("## Skip", StringComparison.Ordinal));
+        Assert.True(md.IndexOf("## Other sources", StringComparison.Ordinal) < md.IndexOf("## Skip", StringComparison.Ordinal));
 
         // Press entries must not be mistaken for guidance cards by the viewer.
         Assert.Equal(["T.D. 10060"], DigestIndex.Cards(md).Select(c => c.Cite));
@@ -229,7 +229,9 @@ public sealed class FeedTests : IDisposable
 
         var payload = JsonNode.Parse(ScoringPrompt.BuildPayload(new FetchResult([], [], [],
             [new FeedItem("The Tax Adviser", "1", "Title", "https://u", new DateTimeOffset(2026, 10, 23, 0, 0, 0, TimeSpan.Zero), ["TAX"], "Summary")])))!;
-        Assert.Equal("2026-10-23", payload["commentary"]![0]!["published"]!.GetValue<string>());
+        Assert.Equal("2026-10-23", payload["other_sources"]![0]!["published"]!.GetValue<string>());
+        Assert.Equal("commentary", payload["other_sources"]![0]!["kind"]!.GetValue<string>());
+        Assert.Contains("\"opinion\": US Tax Court opinions", ScoringPrompt.SystemPrompt("profile"));
 
         // Answers scored before feeds existed have no "press" array.
         Assert.Empty(ScoringPrompt.ParseResult("""{"headline":"h","notes":[],"items":[]}""").Press);

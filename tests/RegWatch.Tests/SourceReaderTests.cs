@@ -73,10 +73,11 @@ public class SourceReaderTests
     {
         var items = WrittenDeterminationsClient.Parse(Fixture("written-determinations.html"), "IRS letter rulings");
 
-        var kept = WrittenDeterminationsClient.Filter(items, Core);
+        var kept = items.Where(i => WrittenDeterminationsClient.IsCore(i, Core)).ToList();
 
         Assert.Equal(["WD 202640001"], kept.Select(i => i.Id));
         Assert.Contains("6048", kept[0].Categories);
+        Assert.All(items, i => Assert.Equal(FeedItemKind.Ruling, i.Kind));
     }
 
     [Fact]
@@ -126,6 +127,7 @@ public class SourceReaderTests
         Assert.Equal("https://dawson.ustaxcourt.gov/case-detail/4329-22", first.Url);
         Assert.Equal(new DateTime(2024, 4, 8), first.Published!.Value.UtcDateTime.Date);
         Assert.StartsWith("T.C. Opinion Judge Greaves 162 T.C. No. 8", first.Summary);
+        Assert.Equal(FeedItemKind.Opinion, first.Kind);
         Assert.DoesNotContain("(Judge Greaves)", first.Summary); // already in the title
     }
 
@@ -152,7 +154,9 @@ public class SourceReaderTests
         Assert.Equal("https://home.treasury.gov/news/press-releases/sb0669/", items[0].Url);
         Assert.Equal(["Readouts"], items[1].Categories);
 
-        var kept = TreasuryPressClient.Filter(items, Core).Select(i => i.Title).ToList();
+        Assert.All(items, i => Assert.Equal(FeedItemKind.Announcement, i.Kind));
+
+        var kept = items.Where(i => TreasuryPressClient.IsKept(i, Core)).Select(i => i.Title).ToList();
         Assert.Equal(3, kept.Count);
         Assert.Contains(kept, t => t.Contains("Beneficial Ownership"));
         Assert.Contains(kept, t => t.Contains("Section 892"));
@@ -166,10 +170,61 @@ public class SourceReaderTests
         using var http = new HttpClient(new Route(url => { asked.Add(url); return Fixture("treasury-press.json"); }));
 
         await TreasuryPressClient.GetItemsAsync(http, "Treasury", new DateTimeOffset(2026, 12, 28, 0, 0, 0, TimeSpan.Zero),
-            new DateTime(2027, 1, 4), Core);
+            new DateTime(2027, 1, 4));
 
         Assert.Equal([TreasuryPressClient.YearUrl(2027), TreasuryPressClient.YearUrl(2026)], asked);
     }
+
+    // ---- Bookmarks for narrowed sources
+
+    [Fact]
+    public async Task NarrowedSource_BookmarksTheNewestDateExamined_EvenWhenNothingIsKept()
+    {
+        var noCoreHits = ProfileTerms.From("""
+            ## Topic buckets
+
+            - **expatriation (2)** — §877A, Form 8854
+            """);
+        var client = new FeedClient(new HttpClient(new Route(_ => Fixture("written-determinations.html")))) { Core = noCoreHits };
+        var source = FeedSource.Defaults.Single(f => f.Url == WrittenDeterminationsClient.ListUrl);
+
+        var read = await client.ReadAsync(source, since: new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
+
+        Assert.Empty(read.Items);
+        Assert.Equal(new DateTime(2026, 10, 23), read.Newest!.Value.Date); // the newest ruling in the table
+    }
+
+    [Fact]
+    public async Task TaxCourt_BookmarksTheSearchWindow()
+    {
+        var client = new FeedClient(new HttpClient(new Route(_ => """{"results":[]}"""))) { Core = Core };
+        var source = FeedSource.Defaults.Single(f => f.Url == TaxCourtClient.SearchUrl);
+
+        var read = await client.ReadAsync(source, since: DateTimeOffset.UtcNow.AddDays(-30));
+
+        Assert.Empty(read.Items);
+        Assert.InRange(read.Newest!.Value, DateTimeOffset.UtcNow.AddDays(-1.1), DateTimeOffset.UtcNow.AddDays(-0.9));
+    }
+
+    // ---- Profile terms edge cases
+
+    [Fact]
+    public void ProfileTerms_DropParentheticalNotes()
+    {
+        var terms = ProfileTerms.From("""
+            ## Topic buckets
+
+            - **intl_info_returns (3)** — Form 5471, 926, 8975
+              (+ Schedule A, country-by-country report), §6038
+            """);
+
+        Assert.Contains("Form 8975", terms.Phrases);
+        Assert.DoesNotContain(terms.Phrases, p => p.Contains('(') || p.Contains(')'));
+    }
+
+    [Fact]
+    public void ProfileTerms_SectionLetterIsUpperCaseOnly() =>
+        Assert.Equal("6048", ProfileTerms.SectionsIn("reporting under section 6048and the regulations")[0]);
 
     private sealed class Route(Func<string, string> body) : HttpMessageHandler
     {
