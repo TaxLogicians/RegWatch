@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 using RegWatch.Core;
@@ -36,7 +36,7 @@ public partial class SourcesWindow : Window
 
         FindButton.IsEnabled = false;
         FoundPanel.Visibility = Visibility.Collapsed;
-        FindStatus.Foreground = System.Windows.Media.Brushes.DimGray;
+        FindStatus.SetTone(Tone.Secondary);
         FindStatus.Text = "Looking for a feed…";
         try
         {
@@ -64,7 +64,7 @@ public partial class SourcesWindow : Window
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or System.Net.Http.HttpRequestException or TaskCanceledException)
         {
-            FindStatus.Foreground = System.Windows.Media.Brushes.Firebrick;
+            FindStatus.SetTone(Tone.Critical);
             FindStatus.Text = ex is TaskCanceledException ? "The site did not answer within 20 seconds." : ex.Message;
         }
         finally
@@ -85,7 +85,7 @@ public partial class SourcesWindow : Window
         _found = null;
         FoundPanel.Visibility = Visibility.Collapsed;
         AddressBox.Clear();
-        FindStatus.Foreground = System.Windows.Media.Brushes.DarkGreen;
+        FindStatus.SetTone(Tone.Success);
         FindStatus.Text = "Added. Click Save to keep it; the next run reads its last 14 days.";
     }
 

@@ -269,10 +269,7 @@ public partial class ProfileEditorWindow : Window
         public int Weight
         {
             get => _weight;
-            set
-            {
-                if (Set(ref _weight, value)) OnPropertyChanged(nameof(WeightBrush));
-            }
+            set => Set(ref _weight, value);
         }
 
         public string NewTerm
@@ -285,14 +282,6 @@ public partial class ProfileEditorWindow : Window
         }
 
         public Visibility NewTermHintVisibility => NewTerm.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-
-        public Brush WeightBrush => Weight switch
-        {
-            3 => Brushes.Firebrick,
-            2 => Brushes.DarkGoldenrod,
-            1 => Brushes.SteelBlue,
-            _ => Brushes.Silver,
-        };
 
         public void CommitNewTerm()
         {

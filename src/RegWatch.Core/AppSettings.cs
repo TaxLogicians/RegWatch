@@ -1,4 +1,4 @@
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Anthropic;
@@ -30,6 +30,14 @@ public enum StructuredOutputMode
     PromptOnly,
 }
 
+/// <summary>Light or dark window colours; System follows the Windows setting.</summary>
+public enum AppTheme
+{
+    System,
+    Light,
+    Dark,
+}
+
 public sealed record OpenAiCompatibleSettings
 {
     public string Preset { get; init; } = "OpenAI";
@@ -53,6 +61,8 @@ public sealed record AppSettings
     };
 
     public ScorerKind Scorer { get; init; } = ScorerKind.ClaudeCode;
+
+    public AppTheme Theme { get; init; } = AppTheme.System;
 
     /// <summary>Optional full path to claude.exe when it is not on PATH.</summary>
     public string? ClaudeCodePath { get; init; }

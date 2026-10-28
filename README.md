@@ -32,7 +32,7 @@ run uses it — no need to touch the schedule. Too noisy? Raise cutoffs or add a
 guard. Missing things? Add signal terms or a new bucket.
 
 ## Local app (since 2026-10-28)
-`src/` holds a .NET 8 app that does the run itself, with no Claude Code session needed.
+`src/` holds a .NET 10 app that does the run itself, with no Claude Code session needed.
 It is published to `C:\Users\dunca\Desktop\RegWatch`:
 - **RegWatch.App.exe**: browse every digest (old agent-written ones too), see upcoming
   comment deadlines across all digests, use **Run now**, **Edit profile** (topic buckets
@@ -55,6 +55,21 @@ web search). **Advanced…** sets models, keys, base URL, structured-output mode
 for small local models, and has a Test connection button. The choice is saved per
 Windows user in `%APPDATA%\RegWatch\settings.json`. The app then writes `digests/<date>.md` (plus a `.json`
 sidecar) in the same card format. PROFILE.md is still the only file you edit to calibrate.
+
+**Theme:** the app uses the Windows 11 look and follows the Windows light/dark setting.
+The **Theme** box in the top bar switches between Match Windows, Light and Dark (saved in
+settings.json); the digest page follows it too.
+
+**Installer:** `installer\build.ps1` publishes the app and runner and builds
+`installer\Output\RegWatch-Setup-<version>.exe` with Inno Setup 6
+(`winget install JRSoftware.InnoSetup`). Setup installs for the current user without an
+admin prompt (or for all users), adds a Start menu shortcut and an uninstaller, and checks
+for the .NET 10 Desktop Runtime. Uninstalling also removes the weekly scheduled task but
+never touches the data folder. On first start the app offers to create
+`%USERPROFILE%\RegWatch` with the default PROFILE.md. The version number lives in
+`Directory.Build.props`.
+
+**Icon:** `tools\make-icon.ps1` draws it and writes `src\RegWatch.App\Assets\RegWatch.ico`.
 
 Build / test / publish:
 ```

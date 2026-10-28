@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -178,13 +178,13 @@ public partial class ScoringSettingsWindow : Window
         error ??= ScorerFactory.Problem(settings!);
         if (error is not null)
         {
-            TestResult.Foreground = System.Windows.Media.Brushes.Firebrick;
+            TestResult.SetTone(Tone.Critical);
             TestResult.Text = error;
             return;
         }
 
         TestButton.IsEnabled = false;
-        TestResult.Foreground = System.Windows.Media.Brushes.DimGray;
+        TestResult.SetTone(Tone.Secondary);
         TestResult.Text = "Testing… (a local model can take a minute)";
         var watch = Stopwatch.StartNew();
         try
@@ -194,7 +194,7 @@ public partial class ScoringSettingsWindow : Window
             var result = await Task.Run(() => scorer.ScoreAsync(profile, SampleRun()));
             var item = result.Items.FirstOrDefault();
 
-            TestResult.Foreground = item?.Score == 1 ? System.Windows.Media.Brushes.DarkGreen : System.Windows.Media.Brushes.DarkGoldenrod;
+            TestResult.SetTone(item?.Score == 1 ? Tone.Success : Tone.Caution);
             TestResult.Text = item is null
                 ? $"Connected in {watch.Elapsed.TotalSeconds:0}s, but the model returned no items."
                 : $"Works ({watch.Elapsed.TotalSeconds:0}s): scored the sample PRA notice {item.Score}" +
@@ -202,7 +202,7 @@ public partial class ScoringSettingsWindow : Window
         }
         catch (Exception ex)
         {
-            TestResult.Foreground = System.Windows.Media.Brushes.Firebrick;
+            TestResult.SetTone(Tone.Critical);
             TestResult.Text = ex.Message;
         }
         finally

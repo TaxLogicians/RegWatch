@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using RegWatch.Core;
 
@@ -16,6 +16,7 @@ public sealed class ApiKeyWindow : Window
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        SetResourceReference(BackgroundProperty, "ApplicationBackgroundBrush");
 
         var envNote = store.EnvVarIsSet
             ? $"\n\n{store.EnvVar} is set in your environment and takes precedence over a saved key."

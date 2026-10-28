@@ -1,33 +1,33 @@
-<Window x:Class="RegWatch.App.SourcesWindow"
+﻿<Window x:Class="RegWatch.App.SourcesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Commentary sources" Height="760" Width="820" MinWidth="640" MinHeight="480"
-        Background="#F7F7F5" FontFamily="Segoe UI" FontSize="13" WindowStartupLocation="CenterOwner">
+        Background="{DynamicResource ApplicationBackgroundBrush}" FontFamily="Segoe UI" FontSize="13" WindowStartupLocation="CenterOwner">
     <Window.Resources>
-        <Style TargetType="Button">
+        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Padding" Value="12,5" />
             <Setter Property="Margin" Value="6,0,0,0" />
         </Style>
         <Style x:Key="Card" TargetType="Border">
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#E2E2DE" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="14,10" />
             <Setter Property="Margin" Value="0,0,0,10" />
         </Style>
         <Style x:Key="Hint" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#777" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
-        <Style TargetType="TextBox">
+        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
             <Setter Property="Padding" Value="4,3" />
         </Style>
     </Window.Resources>
 
     <DockPanel>
-        <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#E2E2DE" BorderThickness="0,1,0,0" Padding="14,10">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="14,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Save" FontWeight="SemiBold" Click="Save_Click" />
                 <Button Content="Cancel" IsCancel="True" />
@@ -49,18 +49,18 @@
                                               ToolTip="Read this feed on each run" />
                                     <Button DockPanel.Dock="Right" Content="Remove" VerticalAlignment="Top" Visibility="{Binding RemoveVisibility}"
                                             Click="Remove_Click" />
-                                    <TextBlock DockPanel.Dock="Right" Text="Built in" Foreground="#888" FontSize="12" VerticalAlignment="Top" Margin="8,5,0,0"
+                                    <TextBlock DockPanel.Dock="Right" Text="Built in" Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontSize="12" VerticalAlignment="Top" Margin="8,5,0,0"
                                                Visibility="{Binding BuiltInVisibility}" />
                                     <StackPanel>
                                         <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" FontWeight="SemiBold" FontSize="14"
-                                                 BorderThickness="0,0,0,1" BorderBrush="#DDD" Background="Transparent" Padding="0,2" />
+                                                 BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" Background="Transparent" Padding="0,2" />
                                         <TextBlock Text="{Binding Url}" Style="{StaticResource Hint}" Margin="0,4,0,8" />
                                         <DockPanel>
-                                            <TextBlock DockPanel.Dock="Left" Text="Only categories:" VerticalAlignment="Center" Foreground="#555" Margin="0,0,8,0" />
+                                            <TextBlock DockPanel.Dock="Left" Text="Only categories:" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,8,0" />
                                             <Grid>
                                                 <TextBox Text="{Binding CategoriesText, UpdateSourceTrigger=PropertyChanged}"
                                                          ToolTip="Comma-separated feed categories to keep, e.g. TAX. Leave empty to keep every article." />
-                                                <TextBlock Text="all categories" Foreground="#AAA" Margin="7,4,0,0" IsHitTestVisible="False"
+                                                <TextBlock Text="all categories" Foreground="{DynamicResource TextFillColorDisabledBrush}" Margin="7,4,0,0" IsHitTestVisible="False"
                                                            Visibility="{Binding CategoriesHintVisibility}" />
                                             </Grid>
                                         </DockPanel>
@@ -85,7 +85,7 @@
                         <StackPanel x:Name="FoundPanel" Visibility="Collapsed" Margin="0,10,0,0">
                             <TextBlock Text="Feed found" FontWeight="SemiBold" />
                             <TextBlock x:Name="FoundUrl" Style="{StaticResource Hint}" Margin="0,2,0,6" />
-                            <TextBlock Text="Latest headlines" Foreground="#555" />
+                            <TextBlock Text="Latest headlines" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             <ItemsControl x:Name="SampleList" Margin="8,4,0,8">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>

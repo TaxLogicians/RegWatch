@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- One version for the app, runner and installer (installer\build.ps1 reads it). -->
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+</Project>

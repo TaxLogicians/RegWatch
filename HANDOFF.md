@@ -4,7 +4,7 @@ Read this first in a new session, then `README.md` and `BACKLOG.md`.
 
 ## Where things stand
 
-RegWatch has moved from a scheduled Claude agent to a local .NET 8 WPF app. Everything is
+RegWatch has moved from a scheduled Claude agent to a local .NET 10 WPF app (moved up from .NET 8 on 2026-10-28). Everything is
 committed on `main`, **pushed to GitHub** (`origin/main`). The `local-app` branch is
 merged and deleted.
 
@@ -68,4 +68,4 @@ test run were domestic and scored 0); covered by unit tests.
 
 ## Next up
 
-See `BACKLOG.md`: dark mode, app icon, installer package, public-GitHub checklist.
+The four `BACKLOG.md` items (dark mode, icon, installer, public-GitHub checklist) were done on 2026-10-28; see README for the theme, installer and icon notes. Next: work through `docs/PUBLIC-GITHUB-CHECKLIST.md` if the repo is to go public.
