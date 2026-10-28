@@ -50,6 +50,8 @@
                         <Button DockPanel.Dock="Right" Content="+ Add bucket" Click="AddBucket_Click" />
                         <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center">
                             An item scores the weight of the highest bucket it matches, minus 1 for a passing mention.
+                            The score decides where it lands in the digest: 3 opens the digest under "read now",
+                            2 comes next under "read this week", 1 under "skim", and 0 is just a one-line entry under Skip.
                             Terms are the IRC sections, forms and phrases that signal the bucket.
                         </TextBlock>
                     </DockPanel>
