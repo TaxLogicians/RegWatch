@@ -5,8 +5,8 @@ Read this first in a new session, then `README.md` and `BACKLOG.md`.
 ## Where things stand
 
 RegWatch has moved from a scheduled Claude agent to a local .NET 8 WPF app. Everything is
-committed on `main`, **6 commits ahead of GitHub (not pushed)**. The `local-app` branch is
-fully merged and can be deleted.
+committed on `main`, **pushed to GitHub** (`origin/main`). The `local-app` branch is
+merged and deleted.
 
 | Commit | What |
 |---|---|
