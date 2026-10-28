@@ -1,0 +1,65 @@
+{
+ "category": "press-releases",
+ "count": 5,
+ "items": [
+  {
+   "date": "2026-10-28",
+   "dateDisplay": "October 28, 2026",
+   "datetime": "2026-10-28T14:30:00Z",
+   "searchText": "treasury sanctions facilitators of dprk it worker fraud targeting u s businesses",
+   "sectionLabel": "Press Releases",
+   "sectionSlug": "press-releases",
+   "subcategory": {},
+   "title": "Treasury Sanctions Facilitators of DPRK IT Worker Fraud Targeting U.S. Businesses",
+   "url": "/news/press-releases/sb0669/"
+  },
+  {
+   "date": "2026-10-22",
+   "dateDisplay": "October 22, 2026",
+   "datetime": "2026-10-22T20:00:00Z",
+   "searchText": "readout secretary of the treasury scott bessent s meeting with president santiago pe a paraguay",
+   "sectionLabel": "Press Releases",
+   "sectionSlug": "press-releases",
+   "subcategory": {
+    "slug": "readouts",
+    "title": "Readouts",
+    "url": "/news/press-releases/readouts"
+   },
+   "title": "READOUT: Secretary of the Treasury Scott Bessent’s Meeting with President Santiago Peña of Paraguay",
+   "url": "/news/press-releases/sb0666/"
+  },
+  {
+   "date": "2026-08-11",
+   "dateDisplay": "August 11, 2026",
+   "datetime": "2026-08-11T15:00:00Z",
+   "searchText": "fincen permanently ends beneficial ownership reporting requirements for millions of small business owners",
+   "sectionLabel": "Press Releases",
+   "sectionSlug": "press-releases",
+   "subcategory": {},
+   "title": "FinCEN Permanently Ends Beneficial Ownership Reporting Requirements for Millions of Small Business Owners",
+   "url": "/news/press-releases/sb0603/"
+  },
+  {
+   "date": "2026-05-29",
+   "dateDisplay": "May 29, 2026",
+   "datetime": "2026-05-29T09:30:00Z",
+   "searchText": "treasury irs issue section 892 proposed regulations to provide grandfathering protection and transitional relief sovereign investors",
+   "sectionLabel": "Press Releases",
+   "sectionSlug": "press-releases",
+   "subcategory": {},
+   "title": "Treasury, IRS Issue Section 892 Proposed Regulations to Provide Grandfathering Protection and Transitional Relief to Sovereign Investors",
+   "url": "/news/press-releases/sb0512/"
+  },
+  {
+   "date": "2026-04-28",
+   "dateDisplay": "April 28, 2026",
+   "datetime": "2026-04-28T12:17:07Z",
+   "searchText": "united states croatia sign protocol to income tax treaty",
+   "sectionLabel": "Press Releases",
+   "sectionSlug": "press-releases",
+   "subcategory": {},
+   "title": "United States, Croatia Sign Protocol to Income Tax Treaty",
+   "url": "/news/press-releases/sb0475/"
+  }
+ ]
+}

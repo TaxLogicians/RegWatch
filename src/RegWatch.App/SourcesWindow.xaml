@@ -38,7 +38,7 @@
             <StackPanel Margin="16,14,16,4">
                 <TextBlock Text="Commentary sources" FontSize="16" FontWeight="SemiBold" />
                 <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,12"
-                           Text="Articles from these feeds are scored with your profile and listed under &quot;In the press&quot;, linked to the IRB or Federal Register item they discuss. RegWatch keeps only each article's headline, short summary and link. The IRB and Federal Register are always read." />
+                           Text="Items from these sources are scored with your profile and listed under &quot;In the press&quot;, linked to the IRB or Federal Register item they discuss. RegWatch keeps only each item's headline, short summary and link. Letter rulings, Tax Court opinions and Treasury releases are first narrowed to the sections and terms in your profile's buckets weighted 2 or 3. The IRB and Federal Register are always read." />
 
                 <ItemsControl x:Name="SourceList">
                     <ItemsControl.ItemTemplate>

@@ -149,7 +149,9 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
     private async Task<(List<FeedItem>, Dictionary<string, DateTimeOffset>)> FetchFeedsAsync(
         RunState state, List<string> problems, IProgress<string>? log, CancellationToken ct)
     {
-        var client = new FeedClient(http);
+        // Rulings, opinions and Treasury releases are narrowed to the profile's core sections and terms.
+        var core = File.Exists(ProfilePath) ? ProfileTerms.From(await File.ReadAllTextAsync(ProfilePath, ct)) : ProfileTerms.Empty;
+        var client = new FeedClient(http) { Core = core };
         var seen = state.SeenFeedItems;
         var items = new List<FeedItem>();
         var bookmarks = new Dictionary<string, DateTimeOffset>();
@@ -165,7 +167,7 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
                 items.AddRange(fresh);
                 if (fresh.Select(i => i.Published).Max() is { } newest) bookmarks[feed.Url] = newest;
             }
-            catch (Exception ex) when (ex is HttpRequestException or System.Xml.XmlException or TaskCanceledException)
+            catch (Exception ex) when (ex is HttpRequestException or System.Xml.XmlException or System.Text.Json.JsonException or TaskCanceledException)
             {
                 problems.Add($"Feed {feed.Name}: {ex.Message}");
             }

@@ -239,7 +239,7 @@ public sealed class FeedTests : IDisposable
     public void Settings_WithoutFeeds_UseBuiltInDefaults()
     {
         var settings = new AppSettings();
-        Assert.Equal(["The Tax Adviser", "Journal of Accountancy", "IRS news releases"], settings.EffectiveFeeds.Select(f => f.Name));
+        Assert.Equal(["The Tax Adviser", "Journal of Accountancy", "IRS news releases", "IRS letter rulings", "Tax Court opinions", "Treasury press releases"], settings.EffectiveFeeds.Select(f => f.Name));
         Assert.Equal(["TAX"], settings.EffectiveFeeds[1].Categories);
     }
 

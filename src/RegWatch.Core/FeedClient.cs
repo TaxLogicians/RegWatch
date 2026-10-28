@@ -6,7 +6,10 @@ using System.Xml.Linq;
 
 namespace RegWatch.Core;
 
-/// <summary>A commentary feed: built-in (The Tax Adviser, JofA) or added by the user.</summary>
+/// <summary>
+/// A source read alongside the IRB and Federal Register: a commentary feed (built in or added by
+/// the user) or one of the built-in page readers (IRS news, letter rulings, Tax Court, Treasury).
+/// </summary>
 public sealed record FeedSource
 {
     public string Name { get; init; } = "";
@@ -23,6 +26,9 @@ public sealed record FeedSource
         new() { Name = "The Tax Adviser", Url = "https://www.thetaxadviser.com/feed/", BuiltIn = true },
         new() { Name = "Journal of Accountancy", Url = "https://www.journalofaccountancy.com/feed/", Categories = ["TAX"], BuiltIn = true },
         new() { Name = "IRS news releases", Url = IrsNewsClient.CurrentMonthUrl, BuiltIn = true },
+        new() { Name = "IRS letter rulings", Url = WrittenDeterminationsClient.ListUrl, BuiltIn = true },
+        new() { Name = "Tax Court opinions", Url = TaxCourtClient.SearchUrl, BuiltIn = true },
+        new() { Name = "Treasury press releases", Url = TreasuryPressClient.PageUrl, BuiltIn = true },
     ];
 }
 
@@ -44,6 +50,9 @@ public sealed partial class FeedClient(HttpClient http)
     public const int SummaryLimit = 600;
     public const int MaxPages = 5;
 
+    /// <summary>The profile's core sections and terms, which narrow the rulings, opinions and Treasury readers.</summary>
+    public ProfileTerms Core { get; init; } = ProfileTerms.Empty;
+
     /// <summary>
     /// New items since <paramref name="since"/> (or the last <paramref name="firstRunDays"/> days on a
     /// first run), filtered by the source's categories. WordPress feeds only show the latest page,
@@ -57,6 +66,12 @@ public sealed partial class FeedClient(HttpClient http)
 
         if (IrsNewsClient.Handles(source.Url))
             items.AddRange(await IrsNewsClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, ct));
+        else if (WrittenDeterminationsClient.Handles(source.Url))
+            items.AddRange(await WrittenDeterminationsClient.GetItemsAsync(http, source.Name, cutoff, Core, ct));
+        else if (TaxCourtClient.Handles(source.Url))
+            items.AddRange(await TaxCourtClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, Core, ct));
+        else if (TreasuryPressClient.Handles(source.Url))
+            items.AddRange(await TreasuryPressClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, Core, ct));
         else
             await ReadFeedPagesAsync(source, cutoff, items, ct);
 

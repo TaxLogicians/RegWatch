@@ -4,7 +4,7 @@ Weekly triage digest of new IRS / Treasury guidance, filtered and scored for a
 US foreign-trust & international tax practice.
 
 ## What it does
-Every week an agent pulls new guidance from two sources, scores each item 0–3
+Every week an agent pulls new guidance from the IRB and the Federal Register (plus, in the app, the sources below), scores each item 0–3
 against your topic profile, summarizes the relevant ones into cards, and writes a
 dated digest you can skim in a minute.
 
@@ -16,6 +16,11 @@ dated digest you can skim in a minute.
   finds its feed). Scored like everything else but listed under **In the press**, and linked
   to the IRB/FR card an article discusses. Only headlines, short summaries and links are kept.
   Tax Notes blocks automated readers, so it cannot be added.
+- **Page readers** (app only, built in) for sources with no usable feed: IRS news releases
+  (newsroom pages), IRS letter rulings (the irs.gov written-determinations table), Tax Court
+  opinions (the court's DAWSON opinion search) and Treasury press releases (the JSON list behind
+  home.treasury.gov's press-release page). The last three are narrowed to the IRC sections and
+  terms in the profile's buckets weighted 2 or 3 before scoring (`ProfileTerms`).
 
 ## Files
 - **`PROFILE.md`** — *edit this to calibrate.* Topic buckets, the 0–3 scoring

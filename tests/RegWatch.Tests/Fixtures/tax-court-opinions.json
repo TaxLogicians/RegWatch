@@ -1,0 +1,46 @@
+{
+ "results": [
+  {
+   "entityName": "PublicDocumentSearchResult",
+   "caseCaption": "Raju J. Mukhi, Petitioner",
+   "docketEntryId": "8e92b5f8-05f9-40fb-9aad-7534c49f1040",
+   "docketNumber": "4329-22",
+   "docketNumberWithSuffix": "4329-22L",
+   "documentTitle": "T.C. Opinion Judge Greaves 162 T.C. No. 8 (An appropriate order will be issued.)",
+   "documentType": "T.C. Opinion",
+   "eventCode": "TCOP",
+   "filingDate": "2024-04-08T18:34:32.284Z",
+   "isStricken": false,
+   "judge": "Greaves",
+   "numberOfPages": 22
+  },
+  {
+   "entityName": "PublicDocumentSearchResult",
+   "caseCaption": "Burt Kroner, Petitioner",
+   "docketEntryId": "9f3063b7-8339-4a04-ae0f-7e38cb6e76eb",
+   "docketNumber": "23983-14",
+   "docketNumberWithSuffix": "23983-14",
+   "documentTitle": "Memorandum Opinion Judge Marvel T.C. Memo. 2024-41 (Supplemental) An appropriate decision will be entered.",
+   "documentType": "Memorandum Opinion",
+   "eventCode": "MOP",
+   "filingDate": "2024-04-08T18:34:31.205Z",
+   "isStricken": false,
+   "judge": "Marvel",
+   "numberOfPages": 10
+  },
+  {
+   "entityName": "PublicDocumentSearchResult",
+   "caseCaption": "George B. Dengin, Petitioner",
+   "docketEntryId": "31435cfb-5ed3-476f-a8d6-bdf1134d05e2",
+   "docketNumber": "5822-17",
+   "docketNumberWithSuffix": "5822-17",
+   "documentTitle": "Memorandum Opinion Judge Buch T.C. Memo. 2023-31  (An appropriate order will be issued.)",
+   "documentType": "Memorandum Opinion",
+   "eventCode": "MOP",
+   "filingDate": "2023-03-14T18:35:11.034Z",
+   "isStricken": false,
+   "judge": "Buch",
+   "numberOfPages": 18
+  }
+ ]
+}

@@ -33,9 +33,23 @@ foreign-trust and international tax practice, and writes a digest you can skim i
 
 - Reads the **Internal Revenue Bulletin** ("Highlights of This Issue" for each new issue) and the
   **Federal Register** (IRS, Treasury and FinCEN documents, including comment deadlines).
-- Reads the **commentary feeds** and **IRS news releases** under **Settings → Sources…** (The Tax
-  Adviser, the Journal of Accountancy's tax section and the IRS newsroom's IR- releases are built
-  in). Only headlines, short summaries and links are kept.
+- Reads the other sources under **Settings → Sources…**. Built in: The Tax Adviser, the Journal
+  of Accountancy's tax section, the IRS newsroom's IR- releases, IRS letter rulings (written
+  determinations), Tax Court opinions and Treasury press releases. Only headlines, short
+  summaries and links are kept.
+- The last three are too broad to score in full, so they are narrowed by your profile first:
+  - **IRS letter rulings:** kept when a ruling's Uniform Issue List code or subject names an IRC
+    section from a bucket weighted 2 or 3 (`§679`, `§6048`, `§965` …). About 30 rulings come out
+    each week, and most are 9100 relief or exempt-organization rulings.
+  - **Tax Court opinions:** the court's opinion search is asked for opinions filed since the last
+    run whose text cites one of those sections ("section 6048" or "sec. 6048") or contains any
+    other term from those buckets ("Form 3520", "foreign grantor trust").
+  - **Treasury press releases:** kept when the headline is about tax (tax, IRS, treaty, FATCA,
+    beneficial ownership) or names one of those terms. Most releases are sanctions and readouts.
+
+  A section cited with a subsection (`§672(f)`, `§643(i)`) matches the whole section in letter
+  rulings, which only give the section number. To catch more, add sections to those buckets: for
+  example, PFIC rulings are filed under §1295 and §1296, and Subpart F rulings under §954.
 - Sends that public text, plus your profile and your latest scoring marks (see below), to the
   scorer you chose; it scores everything in one pass.
 - Writes the digest to `digests\<date>.md` and remembers where it stopped in `STATE.json`, so
@@ -60,8 +74,8 @@ so the next run simply covers the same window again.
   form number, and highlights it in the open digest. The box under it narrows the list to unread
   digests, or to digests where something scored 3, or 2 or 3. Right-click the list to mark
   everything as read.
-- Articles and IRS news releases appear under **In the press**, linked to the IRB or Federal
-  Register item they discuss.
+- Articles, IRS news releases, letter rulings, Tax Court opinions and Treasury releases appear
+  under **In the press**, linked to the IRB or Federal Register item they discuss.
 - **Comment deadlines** lists upcoming comment deadlines from every digest. Double-click a row to
   open the Federal Register page.
 
