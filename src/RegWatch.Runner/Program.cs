@@ -1,14 +1,17 @@
 using RegWatch.Core;
+using RegWatch.Runner;
 
 // Headless weekly run for Windows Task Scheduler:
-//   RegWatch.Runner.exe [--root <RegWatch folder>] [--dry-run]
+//   RegWatch.Runner.exe [--root <RegWatch folder>] [--dry-run] [--no-notify]
 // --dry-run fetches and saves the scoring payload to logs\ without calling Claude or touching STATE.json.
+// Unless --no-notify is given or the setting is off, a Windows notification reports the result.
 // Exit codes: 0 ok, 2 scorer not ready (no claude.exe or API key), 1 run failed. Each run appends to <root>\logs\<date>.log.
 
 string? rootArg = null;
 for (var i = 0; i < args.Length - 1; i++)
     if (args[i] == "--root") rootArg = args[i + 1];
 var dryRun = args.Contains("--dry-run");
+var notify = !args.Contains("--no-notify") && AppSettings.Load().NotifyAfterScheduledRun;
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 var root = RunPipeline.DefaultRoot(rootArg);
@@ -44,6 +47,7 @@ var settings = AppSettings.Load();
 if (ScorerFactory.Problem(settings) is { } problem)
 {
     Log(problem);
+    if (notify) Notifier.Show("RegWatch could not run", problem, root);
     return 2;
 }
 
@@ -52,13 +56,31 @@ try
     using var http = RunPipeline.CreateHttpClient();
     var scorer = ScorerFactory.Create(settings);
     Log($"Scoring via {scorer.Description}.");
-    var pipeline = new RunPipeline(root, http, scorer, settings.EffectiveFeeds);
+    var pipeline = new RunPipeline(root, http, scorer, settings.EffectiveFeeds, settings.UseFeedbackInScoring);
     var outcome = await pipeline.RunAsync(new Progress<string>(Log));
     Log(outcome.Summary);
+    if (notify)
+    {
+        var (title, text) = NotificationText(outcome.Result);
+        Notifier.Show(title, text, root);
+    }
     return 0;
 }
 catch (Exception ex)
 {
     Log($"Run failed: {ex.GetType().Name}: {ex.Message}");
+    if (notify) Notifier.Show("RegWatch run failed", $"{ex.Message}\nSee the log in {logDir}. The next run retries the same window.", root);
     return 1;
+}
+
+static (string Title, string Text) NotificationText(ScoringResult result)
+{
+    var read = result.Items.Count(i => i.Score == 3);
+    var week = result.Items.Count(i => i.Score == 2);
+    var press = result.Press.Count(p => p.Score >= 2);
+    var title = read > 0 ? $"RegWatch: {read} to read now"
+        : week > 0 ? $"RegWatch: {week} to read this week"
+        : "RegWatch: nothing urgent this week";
+    var counts = $"{read} scored 3 · {week} scored 2" + (press > 0 ? $" · {press} relevant article(s)" : "");
+    return (title, $"{counts}\n{result.Headline}");
 }

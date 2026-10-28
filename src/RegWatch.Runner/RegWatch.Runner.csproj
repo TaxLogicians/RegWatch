@@ -10,6 +10,8 @@
     <ApplicationIcon>..\RegWatch.App\Assets\RegWatch.ico</ApplicationIcon>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- For the end-of-run notification (tray balloon, shown as a toast). -->
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
 </Project>

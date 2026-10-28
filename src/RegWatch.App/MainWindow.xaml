@@ -50,8 +50,12 @@
                                 </MenuItem>
                                 <MenuItem Header="Advanced scoring settings…" Click="Advanced_Click"
                                           ToolTip="Models, API keys, OpenAI or local AI servers, connection test" />
+                                <MenuItem Header="Scoring feedback…" Click="Feedback_Click"
+                                          ToolTip="Your Too high / Too low / Not relevant marks, and whether they reach the scorer" />
                                 <MenuItem Header="Sources…" Click="Sources_Click"
-                                          ToolTip="Commentary feeds: The Tax Adviser, JofA, and your own" />
+                                          ToolTip="Commentary feeds and IRS news releases: The Tax Adviser, JofA, and your own" />
+                                <MenuItem x:Name="NotifyItem" Header="Notify after scheduled runs" IsCheckable="True" Click="Notify_Click"
+                                          ToolTip="Show a Windows notification when the weekly scheduled run finishes" />
                                 <Separator />
                                 <MenuItem x:Name="ThemeMenu" Header="Theme">
                                     <MenuItem Header="Match Windows" Tag="System" Click="ThemeItem_Click" />
@@ -70,6 +74,7 @@
                         <Button.ContextMenu>
                             <ContextMenu x:Name="HelpMenu">
                                 <MenuItem Header="User guide" InputGestureText="F1" Click="Guide_Click" />
+                                <MenuItem Header="Check for updates…" Click="Updates_Click" />
                                 <MenuItem Header="About RegWatch" Click="About_Click" />
                             </ContextMenu>
                         </Button.ContextMenu>
@@ -88,9 +93,39 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <ListBox x:Name="DigestList" Grid.Column="0" BorderThickness="0" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+            <DockPanel Grid.Column="0" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+            <StackPanel DockPanel.Dock="Top" Margin="8,8,8,4">
+                <Grid>
+                    <TextBox x:Name="SearchBox" TextChanged="Search_Changed" ToolTip="Search every digest (IRC section, form number, any word)" />
+                    <TextBlock Text="Search digests" Margin="12,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+                <ComboBox x:Name="FilterBox" Margin="0,6,0,0" HorizontalAlignment="Stretch" SelectionChanged="Filter_Changed">
+                    <ComboBoxItem Content="All digests" Tag="All" IsSelected="True" />
+                    <ComboBoxItem Content="Unread" Tag="Unread" />
+                    <ComboBoxItem Content="Something scored 3" Tag="Score3" />
+                    <ComboBoxItem Content="Something scored 2 or 3" Tag="Score2" />
+                </ComboBox>
+            </StackPanel>
+            <ListBox x:Name="DigestList" BorderThickness="0" Background="Transparent"
                      SelectionChanged="DigestList_SelectionChanged" HorizontalContentAlignment="Stretch"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Mark all as read" Click="MarkAllRead_Click" />
+                    </ContextMenu>
+                </ListBox.ContextMenu>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Margin="6,6">
@@ -110,6 +145,19 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
+                                <TextBlock Text="●" Margin="0,0,6,0" FontSize="9" VerticalAlignment="Center" ToolTip="Not opened yet"
+                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsUnread}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                             </DockPanel>
                             <TextBlock Text="{Binding Headline}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" MaxHeight="34" TextTrimming="CharacterEllipsis" FontSize="12" />
@@ -117,6 +165,7 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+            </DockPanel>
 
             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
 

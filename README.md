@@ -78,6 +78,18 @@ Help → About).
 
 **Icon:** `tools\make-icon.ps1` draws it and writes `src\RegWatch.App\Assets\RegWatch.ico`.
 
+**CI and releases:** `.github/workflows/ci.yml` runs the tests on every push to `main` and every
+pull request. To publish a release, set `<Version>` in `Directory.Build.props`, commit, then push a
+matching tag (`git tag v0.1.0-alpha` and `git push origin v0.1.0-alpha`). `release.yml` tests,
+builds the installer and attaches it to a GitHub release (a pre-release when the version has a
+label). **Help → Check for updates…** reads those releases. GitHub Actions minutes on a private repo
+come out of the account's free monthly allowance, and Windows runners count double.
+
+**Sharing the alpha:** see `LICENSE` (evaluation only, all rights reserved). Give a colleague
+access by adding them as a collaborator on GitHub, or send them the installer. The installer is
+not code-signed, so Windows SmartScreen warns until they click More info → Run anyway; the guide
+explains this.
+
 Build / test / publish:
 ```
 dotnet test RegWatch.slnx

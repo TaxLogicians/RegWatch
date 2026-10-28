@@ -9,8 +9,6 @@ namespace RegWatch.App;
 
 public partial class MainWindow : Window
 {
-    private const string TaskName = "RegWatch weekly digest";
-
     private readonly string _root;
     private CancellationTokenSource? _runCts;
 
@@ -29,6 +27,7 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             await MarkdownView.InitAsync(Viewer);
+            Viewer.CoreWebView2.WebMessageReceived += Viewer_WebMessageReceived;
             Refresh();
         };
     }
@@ -83,11 +82,15 @@ public partial class MainWindow : Window
         CheckOnly(ThemeMenu, tag);
     }
 
+    private List<DigestRow> _digests = [];
+    private ReadMarks? _readMarks;
+
     private void Refresh(string? selectPath = null)
     {
-        var digests = DigestIndex.List(DigestsDir).Select(d => new DigestRow(d)).ToList();
-        DigestList.ItemsSource = digests;
-        DigestList.SelectedItem = digests.FirstOrDefault(d => d.Summary.Path == selectPath) ?? digests.FirstOrDefault();
+        var summaries = DigestIndex.List(DigestsDir);
+        _readMarks ??= new ReadMarks(_root, summaries.Select(s => s.Name));
+        _digests = summaries.Select(d => new DigestRow(d) { IsUnread = !_readMarks.IsRead(d.Name) }).ToList();
+        ApplyFilter(selectPath);
 
         var today = DateOnly.FromDateTime(DateTime.Today);
         var deadlines = DigestIndex.UpcomingDeadlines(DigestsDir, today).Select(d => new DeadlineRow(d, today)).ToList();
@@ -103,6 +106,96 @@ public partial class MainWindow : Window
 
         CheckOnly(ScoringMenu, settings.Scorer.ToString());
         CheckOnly(ThemeMenu, settings.Theme.ToString());
+        NotifyItem.IsChecked = settings.NotifyAfterScheduledRun;
+    }
+
+    private string Query => SearchBox.Text.Trim();
+
+    // Shows the digests that pass the search box and the filter, keeping the selection where possible.
+    private void ApplyFilter(string? selectPath = null)
+    {
+        selectPath ??= (DigestList.SelectedItem as DigestRow)?.Summary.Path;
+        var filter = (FilterBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "All";
+        var shown = _digests
+            .Where(d => filter switch
+            {
+                "Unread" => d.IsUnread,
+                "Score3" => d.Summary.Score3 > 0,
+                "Score2" => d.Summary.Score3 + d.Summary.Score2 > 0,
+                _ => true,
+            })
+            .Where(d => Query.Length == 0 || d.Text.Contains(Query, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        DigestList.ItemsSource = shown;
+        DigestList.SelectedItem = shown.FirstOrDefault(d => d.Summary.Path == selectPath) ?? shown.FirstOrDefault();
+    }
+
+    private void Search_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        ApplyFilter();
+        ShowSelectedDigest(); // re-highlight matches in the open digest
+    }
+
+    private void Filter_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (IsLoaded) ApplyFilter();
+    }
+
+    private void MarkAllRead_Click(object sender, RoutedEventArgs e)
+    {
+        _readMarks?.MarkAllRead(_digests.Select(d => d.Name));
+        Refresh();
+    }
+
+    private void Notify_Click(object sender, RoutedEventArgs e) =>
+        (AppSettings.Load() with { NotifyAfterScheduledRun = NotifyItem.IsChecked }).Save();
+
+    private void Feedback_Click(object sender, RoutedEventArgs e) =>
+        new FeedbackWindow(_root) { Owner = this }.ShowDialog();
+
+    private async void Updates_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateInfo info;
+        try
+        {
+            using var http = RunPipeline.CreateHttpClient();
+            info = await UpdateCheck.CheckAsync(http, AppInfo.DisplayVersion);
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            MessageBox.Show(this, $"Could not check for updates: {ex.Message}", "Check for updates");
+            return;
+        }
+
+        var open = MessageBox.Show(this, info.Message + (info.Url is null ? "" : "\n\nOpen the Releases page?"),
+            "Check for updates", info.Url is null ? MessageBoxButton.OK : MessageBoxButton.YesNo,
+            info.Available ? MessageBoxImage.Information : MessageBoxImage.None);
+        if (open == MessageBoxResult.Yes && info.Url is not null) OpenExternal(info.Url);
+    }
+
+    // "Too high / Too low / Not relevant" clicks from the digest page.
+    private void Viewer_WebMessageReceived(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        if (_shownDigest is null) return;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(e.WebMessageAsJson);
+            var msg = doc.RootElement;
+            if (msg.GetProperty("type").GetString() != "feedback") return;
+            new FeedbackLog(_root).Add(new FeedbackEntry
+            {
+                At = DateTime.Now,
+                Digest = _shownDigest,
+                Item = msg.GetProperty("item").GetString() ?? "",
+                Score = msg.GetProperty("score").GetInt32(),
+                Verdict = Enum.Parse<FeedbackVerdict>(msg.GetProperty("verdict").GetString() ?? ""),
+            });
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException or KeyNotFoundException or ArgumentException or InvalidOperationException)
+        {
+            // A malformed message from the page is ignored rather than crashing the app.
+        }
     }
 
     // Radio-style ticks in a submenu: only the item whose Tag matches is checked.
@@ -119,11 +212,29 @@ public partial class MainWindow : Window
         Refresh((DigestList.SelectedItem as DigestRow)?.Summary.Path);
     }
 
+    private string? _shownDigest;
+
     private void DigestList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (DigestList.SelectedItem is not DigestRow row || Viewer.CoreWebView2 is null) return;
-        MarkdownView.ShowDigest(Viewer, File.ReadAllText(row.Summary.Path));
-        Tabs.SelectedIndex = 0;
+        if (ShowSelectedDigest()) Tabs.SelectedIndex = 0;
+    }
+
+    private bool ShowSelectedDigest()
+    {
+        if (DigestList.SelectedItem is not DigestRow row || Viewer.CoreWebView2 is null) return false;
+        var marks = new FeedbackLog(_root).Load()
+            .Where(f => f.Digest == row.Name)
+            .GroupBy(f => f.Item)
+            .ToDictionary(g => g.Key, g => g.Last().Verdict.ToString());
+        _shownDigest = row.Name;
+        MarkdownView.ShowDigest(Viewer, row.Text, marks, Query.Length > 0 ? Query : null);
+
+        if (row.IsUnread)
+        {
+            _readMarks?.MarkRead(row.Name);
+            row.IsUnread = false;
+        }
+        return true;
     }
 
     private async void Run_Click(object sender, RoutedEventArgs e)
@@ -153,7 +264,7 @@ public partial class MainWindow : Window
             using var http = RunPipeline.CreateHttpClient();
             var scorer = ScorerFactory.Create(settings);
             ((IProgress<string>)progress).Report($"Scoring via {scorer.Description}.");
-            var pipeline = new RunPipeline(_root, http, scorer, settings.EffectiveFeeds);
+            var pipeline = new RunPipeline(_root, http, scorer, settings.EffectiveFeeds, settings.UseFeedbackInScoring);
             var outcome = await Task.Run(() => pipeline.RunAsync(progress, _runCts.Token));
             ((IProgress<string>)progress).Report(outcome.Summary);
             Refresh(outcome.DigestPath);
@@ -202,26 +313,36 @@ public partial class MainWindow : Window
         }
 
         var answer = MessageBox.Show(this,
-            $"Create a Windows scheduled task \"{TaskName}\" that runs every Monday at 19:00 (catches the US-morning IRS release)?\n\n" +
-            "It runs as you, only while you are signed in, and replaces any existing task with that name.",
+            $"Create a Windows scheduled task \"{WeeklyTask.Name}\" that runs every Monday at 19:00 (catches the US-morning IRS release)?\n\n" +
+            "It runs as you, while you are signed in. If the computer is off or asleep at 19:00, it runs as soon as " +
+            "possible afterwards. It replaces any existing task with that name.",
             "Schedule weekly run", MessageBoxButton.OKCancel, MessageBoxImage.Question);
         if (answer != MessageBoxResult.OK) return;
 
-        var psi = new ProcessStartInfo("schtasks.exe")
+        // schtasks reads task XML as UTF-16, matching the declaration in WeeklyTask.Xml.
+        var xmlPath = Path.Combine(Path.GetTempPath(), $"regwatch-task-{Guid.NewGuid():N}.xml");
+        File.WriteAllText(xmlPath, WeeklyTask.Xml(runner, _root, WeeklyTask.NextMondayEvening(DateTime.Now)), System.Text.Encoding.Unicode);
+        try
         {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        foreach (var a in new[] { "/Create", "/F", "/SC", "WEEKLY", "/D", "MON", "/ST", "19:00", "/TN", TaskName,
-                     "/TR", $"\"{runner}\" --root \"{_root}\"" })
-            psi.ArgumentList.Add(a);
+            var psi = new ProcessStartInfo("schtasks.exe")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            foreach (var a in new[] { "/Create", "/F", "/TN", WeeklyTask.Name, "/XML", xmlPath })
+                psi.ArgumentList.Add(a);
 
-        using var p = Process.Start(psi)!;
-        var output = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
-        p.WaitForExit();
-        MessageBox.Show(this, output.Trim(), p.ExitCode == 0 ? "Scheduled" : "Could not schedule");
+            using var p = Process.Start(psi)!;
+            var output = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
+            p.WaitForExit();
+            MessageBox.Show(this, output.Trim(), p.ExitCode == 0 ? "Scheduled" : "Could not schedule");
+        }
+        finally
+        {
+            File.Delete(xmlPath);
+        }
     }
 
     private void DeadlineGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -232,10 +353,28 @@ public partial class MainWindow : Window
     private static void OpenExternal(string target) => MarkdownView.OpenExternal(target);
 
 
-    private sealed class DigestRow(DigestSummary summary)
+    private sealed class DigestRow(DigestSummary summary) : System.ComponentModel.INotifyPropertyChanged
     {
+        private bool _isUnread;
+        private string? _text;
+
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
         public DigestSummary Summary { get; } = summary;
         public string Name => Summary.Name;
+
+        /// <summary>The digest's Markdown, read once (for search and display).</summary>
+        public string Text => _text ??= File.ReadAllText(Summary.Path);
+
+        public bool IsUnread
+        {
+            get => _isUnread;
+            set
+            {
+                _isUnread = value;
+                PropertyChanged?.Invoke(this, new(nameof(IsUnread)));
+            }
+        }
         public string Headline => Summary.Headline;
         public string Badge => Summary.Score3 > 0 ? $"{Summary.Score3}× 3" : Summary.Score2 > 0 ? $"{Summary.Score2}× 2" : "–";
         public int BadgeLevel => Summary.Score3 > 0 ? 3 : Summary.Score2 > 0 ? 2 : 0;

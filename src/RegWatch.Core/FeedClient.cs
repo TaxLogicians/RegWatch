@@ -22,6 +22,7 @@ public sealed record FeedSource
     [
         new() { Name = "The Tax Adviser", Url = "https://www.thetaxadviser.com/feed/", BuiltIn = true },
         new() { Name = "Journal of Accountancy", Url = "https://www.journalofaccountancy.com/feed/", Categories = ["TAX"], BuiltIn = true },
+        new() { Name = "IRS news releases", Url = IrsNewsClient.CurrentMonthUrl, BuiltIn = true },
     ];
 }
 
@@ -54,6 +55,22 @@ public sealed partial class FeedClient(HttpClient http)
         var cutoff = since ?? DateTimeOffset.UtcNow.AddDays(-firstRunDays);
         var items = new List<FeedItem>();
 
+        if (IrsNewsClient.Handles(source.Url))
+            items.AddRange(await IrsNewsClient.GetItemsAsync(http, source.Name, cutoff, DateTime.Today, ct));
+        else
+            await ReadFeedPagesAsync(source, cutoff, items, ct);
+
+        return items
+            .Where(i => i.Published is null || i.Published > cutoff)
+            .Where(i => source.Categories.Count == 0
+                || i.Categories.Any(c => source.Categories.Contains(c, StringComparer.OrdinalIgnoreCase)))
+            .GroupBy(i => i.Id)
+            .Select(g => g.First())
+            .ToList();
+    }
+
+    private async Task ReadFeedPagesAsync(FeedSource source, DateTimeOffset cutoff, List<FeedItem> items, CancellationToken ct)
+    {
         for (var page = 1; page <= MaxPages; page++)
         {
             var url = page == 1 ? source.Url : PageUrl(source.Url, page);
@@ -75,14 +92,6 @@ public sealed partial class FeedClient(HttpClient http)
             var reachedBookmark = parsed.Count == 0 || parsed.Any(i => i.Published is { } p && p <= cutoff);
             if (reachedBookmark || !isNew || !IsWordPress(source.Url, xml)) break;
         }
-
-        return items
-            .Where(i => i.Published is null || i.Published > cutoff)
-            .Where(i => source.Categories.Count == 0
-                || i.Categories.Any(c => source.Categories.Contains(c, StringComparer.OrdinalIgnoreCase)))
-            .GroupBy(i => i.Id)
-            .Select(g => g.First())
-            .ToList();
     }
 
     public static IReadOnlyList<FeedItem> Parse(string xml, string sourceName)

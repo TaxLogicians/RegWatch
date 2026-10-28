@@ -9,7 +9,7 @@ public sealed record RunOutcome(string DigestPath, string Summary, ScoringResult
 /// One weekly run, the same steps as PLAYBOOK.md: load config, fetch IRB + Federal Register
 /// (+ commentary feeds), dedup, score, write the digest, update STATE.json.
 /// </summary>
-public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IReadOnlyList<FeedSource>? feeds = null)
+public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IReadOnlyList<FeedSource>? feeds = null, bool useFeedback = false)
 {
     public string ProfilePath => Path.Combine(root, "PROFILE.md");
     public string StatePath => Path.Combine(root, "STATE.json");
@@ -38,6 +38,11 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
             throw new FileNotFoundException($"PROFILE.md not found in {root}.", ProfilePath);
 
         var profile = await File.ReadAllTextAsync(ProfilePath, ct);
+        if (useFeedback && new FeedbackLog(root).Load() is { Count: > 0 } corrections)
+        {
+            profile += FeedbackLog.ProfileAddendum(corrections);
+            log?.Report($"Including {Math.Min(corrections.Count, FeedbackLog.MaxInPrompt)} scoring correction(s) from your feedback.");
+        }
         var store = new StateStore(StatePath);
         var state = store.Load();
         var today = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

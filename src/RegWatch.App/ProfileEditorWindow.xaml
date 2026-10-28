@@ -30,6 +30,8 @@
             <DockPanel>
                 <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Import…" Click="Import_Click" ToolTip="Replace this profile with a PROFILE.md file (yours is backed up first)" />
+                    <Button Content="Export…" Click="Export_Click" ToolTip="Save a copy of this profile to share" />
                     <Button Content="Open in text editor" Click="OpenExternal_Click" ToolTip="Open PROFILE.md in your default editor" />
                     <Button Content="Revert" Click="Revert_Click" ToolTip="Discard unsaved changes and reload PROFILE.md" />
                     <Button Content="Save" FontWeight="SemiBold" IsDefault="False" Click="Save_Click" />

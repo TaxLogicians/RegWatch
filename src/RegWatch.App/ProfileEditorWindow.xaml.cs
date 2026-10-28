@@ -229,6 +229,63 @@ public partial class ProfileEditorWindow : Window
     private void OpenExternal_Click(object sender, RoutedEventArgs e) =>
         Process.Start(new ProcessStartInfo(_path) { UseShellExecute = true });
 
+    // Export / import let practitioners swap calibrations as plain PROFILE.md files.
+    private void Export_Click(object sender, RoutedEventArgs e)
+    {
+        if (IsDirty && MessageBox.Show(this, "Export the saved profile? Unsaved changes are not included; save first to include them.",
+                "Export profile", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+            return;
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export profile",
+            FileName = $"RegWatch-profile-{DateTime.Today:yyyy-MM-dd}.md",
+            Filter = "Markdown (*.md)|*.md|All files (*.*)|*.*",
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        File.Copy(_path, dialog.FileName, overwrite: true);
+        StatusText.Text = $"Exported to {dialog.FileName}";
+    }
+
+    private void Import_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import profile",
+            Filter = "Markdown (*.md)|*.md|All files (*.*)|*.*",
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        var text = File.ReadAllText(dialog.FileName);
+        var doc = ProfileDocument.Parse(text);
+        if (!doc.HasBucketSection || doc.Buckets.Count == 0)
+        {
+            MessageBox.Show(this, $"{Path.GetFileName(dialog.FileName)} does not look like a RegWatch profile: it has no topic buckets.",
+                "Import profile", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var backup = Path.Combine(Path.GetDirectoryName(_path)!, $"PROFILE.backup-{DateTime.Now:yyyyMMdd-HHmmss}.md");
+        if (MessageBox.Show(this,
+                $"Replace your profile with {Path.GetFileName(dialog.FileName)} ({doc.Buckets.Count} buckets, {doc.Guards.Count} guards)?\n\n" +
+                $"Your current profile is kept as {Path.GetFileName(backup)}" + (IsDirty ? ", and unsaved changes are discarded." : "."),
+                "Import profile", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+            return;
+
+        File.Copy(_path, backup);
+        File.WriteAllText(_path, text, new UTF8Encoding(false));
+        _rawEdited = false;
+        Load(text);
+        _savedText = CurrentText();
+        if (Tabs.SelectedItem == RawTab)
+        {
+            _settingRaw = true;
+            RawBox.Text = _savedText;
+            _settingRaw = false;
+        }
+        UpdateStatus();
+    }
+
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
     protected override void OnClosing(CancelEventArgs e)

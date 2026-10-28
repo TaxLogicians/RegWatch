@@ -74,7 +74,7 @@ public static class DigestWriter
         if (relevant.Count == 0 && skipped.Count == 0) return;
 
         sb.AppendLine($"## In the press — {relevant.Count} relevant article(s)").AppendLine();
-        sb.AppendLine("> Commentary from professional publications: secondary sources. Use them to find and understand the guidance, then rely on the primary source.").AppendLine();
+        sb.AppendLine("> Commentary from professional publications (secondary sources) and IRS news releases (announcements, not guidance). Use them to find and understand the guidance, then rely on the primary source.").AppendLine();
 
         foreach (var p in relevant)
         {

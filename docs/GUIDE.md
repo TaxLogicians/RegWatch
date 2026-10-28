@@ -8,8 +8,10 @@ foreign-trust and international tax practice, and writes a digest you can skim i
 
 ## Getting started
 
-1. **Install.** Run `RegWatch-Setup.exe`. It needs the free **.NET 10 Desktop Runtime (x64)**
-   from Microsoft; setup tells you if it is missing and opens the download page.
+1. **Install.** Run `RegWatch-Setup-<version>.exe`. It needs the free **.NET 10 Desktop Runtime
+   (x64)** from Microsoft; setup tells you if it is missing and opens the download page.
+   The alpha installer is not code-signed, so Windows may say **"Windows protected your PC"**:
+   click **More info**, then **Run anyway**.
 2. **First start.** RegWatch offers to create its data folder, `%USERPROFILE%\RegWatch`, with
    the default profile. Click OK.
 3. **Choose who scores the items.** Open **Settings → Scoring**:
@@ -31,10 +33,11 @@ foreign-trust and international tax practice, and writes a digest you can skim i
 
 - Reads the **Internal Revenue Bulletin** ("Highlights of This Issue" for each new issue) and the
   **Federal Register** (IRS, Treasury and FinCEN documents, including comment deadlines).
-- Reads the **commentary feeds** under **Settings → Sources…** (The Tax Adviser and the Journal
-  of Accountancy's tax section are built in). Only headlines, short summaries and links are kept.
-- Sends that public text, plus your profile, to the scorer you chose; it scores everything in
-  one pass.
+- Reads the **commentary feeds** and **IRS news releases** under **Settings → Sources…** (The Tax
+  Adviser, the Journal of Accountancy's tax section and the IRS newsroom's IR- releases are built
+  in). Only headlines, short summaries and links are kept.
+- Sends that public text, plus your profile and your latest scoring marks (see below), to the
+  scorer you chose; it scores everything in one pass.
 - Writes the digest to `digests\<date>.md` and remembers where it stopped in `STATE.json`, so
   nothing is read twice or missed.
 
@@ -51,11 +54,28 @@ so the next run simply covers the same window again.
 | **0, skip** | Out of scope. |
 
 - The list on the left shows each digest with a badge: **3× 3** means three items scored 3;
-  **2× 2** means no 3s but two 2s; **–** means nothing above 1.
-- Articles from the commentary feeds appear under **In the press**, linked to the IRB or Federal
+  **2× 2** means no 3s but two 2s; **–** means nothing above 1. A dot marks a digest you have
+  not opened yet.
+- **Search digests** (above the list) finds every digest that mentions a word, IRC section or
+  form number, and highlights it in the open digest. The box under it narrows the list to unread
+  digests, or to digests where something scored 3, or 2 or 3. Right-click the list to mark
+  everything as read.
+- Articles and IRS news releases appear under **In the press**, linked to the IRB or Federal
   Register item they discuss.
 - **Comment deadlines** lists upcoming comment deadlines from every digest. Double-click a row to
   open the Federal Register page.
+
+## Marking a score as wrong
+
+Hover over an item in a digest to see **Too high**, **Too low** and **Not relevant** (skipped
+items only offer **Too low**). Click one to record your view; click another to change it.
+
+- Your latest 40 marks go to the scorer with the profile as calibration examples, so similar
+  items are scored the way you indicated. Turn this off, review the marks, or remove some under
+  **Settings → Scoring feedback…**.
+- Marks are also a to-do list for the profile: a pattern of "Not relevant" usually wants a
+  guard, and "Too low" a missing term.
+- They are kept in `feedback.jsonl` in the data folder.
 
 ## Tuning the scoring: Edit profile
 
@@ -71,12 +91,19 @@ Everything RegWatch knows about your practice is in `PROFILE.md`, which **Edit p
 Too noisy? Add a guard or lower a weight. Missing things? Add terms or a new bucket. The next run
 uses the changes; nothing else needs updating.
 
+**Export…** saves a copy of your profile to share with a colleague; **Import…** replaces yours
+with one you received. Your current profile is backed up first as `PROFILE.backup-<date>.md`.
+
 ## Running it every week
 
 **Schedule weekly** creates a Windows scheduled task that runs RegWatch every Monday at 19:00
-(after the US-morning IRS release). It runs as you, only while you are signed in to Windows, and
+(after the US-morning IRS release). It runs as you, while you are signed in to Windows. If the
+computer is off or asleep at 19:00, the run happens as soon as possible afterwards. Each run
 writes a log to `logs\<date>.log` in the data folder. Click it again to update the task.
 Uninstalling RegWatch removes the task.
+
+When a scheduled run finishes, a Windows notification says how many items scored 3 and 2; click
+it to open RegWatch. Turn this off with **Settings → Notify after scheduled runs**.
 
 ## Settings
 
@@ -84,7 +111,9 @@ Uninstalling RegWatch removes the task.
 |---|---|
 | **Scoring** | Who scores the items (see Getting started). |
 | **Advanced scoring settings…** | Models, API keys, OpenAI or local server details, connection test. |
+| **Scoring feedback…** | Your Too high / Too low / Not relevant marks, and whether they go to the scorer. |
 | **Sources…** | Turn commentary feeds on or off, limit them to categories, or add any site with an RSS/Atom feed. Some sites (Tax Notes, for example) block automated readers and cannot be added. |
+| **Notify after scheduled runs** | Windows notification when the weekly run finishes. |
 | **Theme** | Match Windows, Light or Dark. |
 
 ## Where things are kept
@@ -112,4 +141,6 @@ information is involved at any point.
 ## Version and feedback
 
 **Help → About RegWatch** shows the version and folder locations. Press **Ctrl+C** in that box to
-copy the details into an email or bug report.
+copy the details into an email or bug report. **Help → Check for updates…** looks for a newer
+release on GitHub. While the repository is private, GitHub only shows releases to signed-in
+collaborators, so the check may send you to the Releases page in your browser instead.

@@ -11,3 +11,4 @@ logs/
 *.user
 installer/publish/
 installer/Output/
+read.json

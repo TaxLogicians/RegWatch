@@ -1,0 +1,45 @@
+<Window x:Class="RegWatch.App.FeedbackWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Scoring feedback" Height="560" Width="900" MinWidth="600" MinHeight="360"
+        Background="{DynamicResource ApplicationBackgroundBrush}" FontFamily="Segoe UI" FontSize="13" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="14,10">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Remove selected" Click="Remove_Click" />
+                    <Button Content="Open file" Click="OpenFile_Click" ToolTip="feedback.jsonl in the data folder" />
+                    <Button Content="Close" IsCancel="True" />
+                </StackPanel>
+                <TextBlock x:Name="CountText" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </DockPanel>
+        </Border>
+
+        <StackPanel DockPanel.Dock="Top" Margin="16,14,16,10">
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Text="Marks you leave on digest items with Too high, Too low or Not relevant. They also show where the profile needs a guard, a term or a different weight (Edit profile)." />
+            <CheckBox x:Name="UseInScoring" Margin="0,10,0,0" Checked="UseInScoring_Changed" Unchecked="UseInScoring_Changed">
+                <TextBlock TextWrapping="Wrap">
+                    Use these marks when scoring: the latest <Run x:Name="MaxRun" /> go to the scorer with the profile as calibration examples.
+                </TextBlock>
+            </CheckBox>
+        </StackPanel>
+
+        <DataGrid x:Name="Grid" Margin="16,0,16,12" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Marked" Binding="{Binding At, StringFormat=yyyy-MM-dd}" Width="100" />
+                <DataGridTextColumn Header="Digest" Binding="{Binding Digest}" Width="110" />
+                <DataGridTextColumn Header="Item" Binding="{Binding Item}" Width="*" />
+                <DataGridTextColumn Header="Scored" Binding="{Binding Score}" Width="70" />
+                <DataGridTextColumn Header="Your mark" Binding="{Binding VerdictText}" Width="190" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

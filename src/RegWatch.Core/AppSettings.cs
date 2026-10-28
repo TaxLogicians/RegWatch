@@ -79,8 +79,17 @@ public sealed record AppSettings
     /// <summary>Commentary feeds; null (settings from before feeds existed) means the built-in defaults.</summary>
     public IReadOnlyList<FeedSource>? Feeds { get; init; }
 
+    /// <summary>Saved feeds, plus any built-in source added in a later version (so it appears without a reset).</summary>
     [JsonIgnore]
-    public IReadOnlyList<FeedSource> EffectiveFeeds => Feeds ?? FeedSource.Defaults;
+    public IReadOnlyList<FeedSource> EffectiveFeeds => Feeds is null
+        ? FeedSource.Defaults
+        : [.. Feeds, .. FeedSource.Defaults.Where(d => Feeds.All(f => !string.Equals(f.Url, d.Url, StringComparison.OrdinalIgnoreCase)))];
+
+    /// <summary>Show a Windows notification when a scheduled (headless) run finishes.</summary>
+    public bool NotifyAfterScheduledRun { get; init; } = true;
+
+    /// <summary>Send the latest "scored wrong" marks to the scorer as calibration examples.</summary>
+    public bool UseFeedbackInScoring { get; init; } = true;
 
     public static string SettingsPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RegWatch", "settings.json");
@@ -141,9 +150,9 @@ public static class ScorerFactory
     public static string? Problem(AppSettings settings) => settings.Scorer switch
     {
         ScorerKind.ClaudeCode when ClaudeCodeScorer.Locate(settings.ClaudeCodePath) is null =>
-            "Claude Code (claude.exe) was not found. Install it, or pick another scorer under Advanced.",
+            "Claude Code (claude.exe) was not found. Install it, or pick another scorer under Settings.",
         ScorerKind.AnthropicApi when !ApiKeyStore.Anthropic.HasKey =>
-            "No Anthropic API key. Set one under Advanced, or pick another scorer.",
+            "No Anthropic API key. Set one under Settings > Advanced scoring settings, or pick another scorer.",
         ScorerKind.OpenAiCompatible => OpenAiCompatibleScorer.Problem(settings.OpenAi),
         _ => null,
     };

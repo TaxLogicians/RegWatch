@@ -1,0 +1,50 @@
+# Pushing a tag like v0.1.0-alpha builds the installer and publishes it as a GitHub release.
+# The tag must match <Version> in Directory.Build.props; tags with a label (-alpha, -beta)
+# become pre-releases. Help > Check for updates in the app reads these releases.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Check the tag matches the version
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          $version = $props.Project.PropertyGroup.Version
+          if ("v$version" -ne "${{ github.ref_name }}") {
+            throw "Tag ${{ github.ref_name }} does not match <Version>$version</Version> in Directory.Build.props"
+          }
+
+      - name: Test
+        run: dotnet test RegWatch.slnx -c Release
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build the installer
+        shell: pwsh
+        run: ./installer/build.ps1
+
+      - name: Publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $setup = (Get-ChildItem installer/Output/*.exe).FullName
+          $flags = @('--title', "RegWatch $tag", '--generate-notes')
+          if ($tag -match '-') { $flags += '--prerelease' }
+          gh release create $tag $setup @flags

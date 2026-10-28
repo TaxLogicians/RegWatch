@@ -29,6 +29,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern
 SetupIconFile=..\src\RegWatch.App\Assets\RegWatch.ico
+LicenseFile=..\LICENSE
 UninstallDisplayIcon={app}\{#AppExe}
 OutputDir=Output
 OutputBaseFilename=RegWatch-Setup-{#AppVersion}

@@ -41,9 +41,9 @@ public sealed class OpenAiCompatibleScorer(OpenAiCompatibleSettings settings, st
     public static string? Problem(OpenAiCompatibleSettings s)
     {
         if (!Uri.TryCreate(s.BaseUrl.Trim(), UriKind.Absolute, out var uri) || (uri.Scheme != "https" && uri.Scheme != "http"))
-            return "Set a base URL for the OpenAI-compatible server under Advanced (e.g. http://localhost:11434/v1).";
+            return "Set a base URL for the OpenAI-compatible server under Settings > Advanced scoring settings (e.g. http://localhost:11434/v1).";
         if (string.IsNullOrWhiteSpace(s.Model))
-            return "Set a model name for the OpenAI-compatible server under Advanced.";
+            return "Set a model name for the OpenAI-compatible server under Settings > Advanced scoring settings.";
         return null;
     }
 
