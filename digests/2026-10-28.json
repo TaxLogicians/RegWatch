@@ -1,0 +1,121 @@
+{
+  "headline": "Nothing scores 2 or higher this run. The only in-scope item is a routine PRA form-burden renewal on U.S.-to-foreign-corporation stock transfers (\u00A7367/Form 926), capped at score 1.",
+  "notes": [
+    "No IRB issues in this run; all 9 items are Federal Register documents.",
+    "2026-21786 (Outbound Investment Security Program) is a national-security proposed rule, not a tax measure and not an AML/ownership-transparency/entity-registration final rule, so no document-number news check was triggered; scored 0.",
+    "No final Treasury/FinCEN rule touching ownership transparency, AML or entity registration appeared, so no web searches were run."
+  ],
+  "items": [
+    {
+      "cite": "FR 2026-21921 \u2014 PRA: transfers of domestic stock/securities by U.S. persons to foreign corporations",
+      "source": "FR 2026-21921",
+      "type": "Notice",
+      "irc": "not stated",
+      "comment_deadline": "2026-12-28",
+      "url": "https://www.federalregister.gov/documents/2026/10/28/2026-21921/agency-information-collection-activities-comment-request-on-certain-transfers-of-domestic-stock-or",
+      "score": 1,
+      "buckets": [
+        "intl_info_returns",
+        "foreign_corp_partnership"
+      ],
+      "plain_english": "A Paperwork Reduction Act notice invites comment on the information collection for U.S.-person transfers of domestic stock or securities to foreign corporations (\u00A7367/\u00A76038B, Form 926 territory).",
+      "why_you_care": "intl_info_returns/foreign_corp_partnership \u2014 touches Form 926 and \u00A7367 outbound transfers, but it is a routine PRA form-burden renewal, so capped at skim."
+    },
+    {
+      "cite": "FR 2026-21733 \u2014 Notice of OFAC Sanctions Action",
+      "source": "FR 2026-21733",
+      "type": "Notice",
+      "irc": "not stated",
+      "comment_deadline": null,
+      "url": "https://www.federalregister.gov/documents/2026/10/26/2026-21733/notice-of-ofac-sanctions-action",
+      "score": 0,
+      "buckets": [],
+      "plain_english": "OFAC adds persons and vessels to the SDN List.",
+      "why_you_care": "Sanctions list, no tax angle."
+    },
+    {
+      "cite": "FR 2026-21774 \u2014 PRA: garnishment notice for federal benefit accounts",
+      "source": "FR 2026-21774",
+      "type": "Notice",
+      "irc": "not stated",
+      "comment_deadline": "2026-12-28",
+      "url": "https://www.federalregister.gov/documents/2026/10/26/2026-21774/agency-information-collection-activities-proposed-collection-comment-request-notice-to-account",
+      "score": 0,
+      "buckets": [],
+      "plain_english": "A PRA notice covers the account-garnishment notice for accounts holding federal benefit payments.",
+      "why_you_care": "Benefit-payment garnishment, out of scope."
+    },
+    {
+      "cite": "FR 2026-21786 \u2014 Outbound Investment Security Program Regulations",
+      "source": "FR 2026-21786",
+      "type": "Proposed Rule",
+      "irc": "not stated",
+      "comment_deadline": "2026-12-07",
+      "url": "https://www.federalregister.gov/documents/2026/10/26/2026-21786/outbound-investment-security-program-regulations",
+      "score": 0,
+      "buckets": [],
+      "plain_english": "Treasury proposes rules requiring notification or prohibition of certain U.S.-person investments in foreign persons in sensitive technologies.",
+      "why_you_care": "National-security investment rules, not tax."
+    },
+    {
+      "cite": "FR 2026-21841 \u2014 PRA: Call Report (FFIEC 031/041/051) revisions",
+      "source": "FR 2026-21841",
+      "type": "Notice",
+      "irc": "not stated",
+      "comment_deadline": "2026-12-28",
+      "url": "https://www.federalregister.gov/documents/2026/10/27/2026-21841/proposed-agency-information-collection-activities-comment-request",
+      "score": 0,
+      "buckets": [],
+      "plain_english": "Bank regulators seek comment on revised Call Report collections tied to a housing-act rule.",
+      "why_you_care": "Bank regulatory PRA, out of scope."
+    },
+    {
+      "cite": "FR 2026-21887 \u2014 PRA: communications excise tax, prepaid telephone cards",
+      "source": "FR 2026-21887",
+      "type": "Notice",
+      "irc": "not stated",
+      "comment_deadline": "2026-12-28",
+      "url": "https://www.federalregister.gov/documents/2026/10/27/2026-21887/agency-information-collection-activities-on-comment-request-relating-to-communications-excise-tax",
+      "score": 0,
+      "buckets": [],
+      "plain_english": "A PRA notice seeks comment on communications excise tax collection for prepaid phone cards.",
+      "why_you_care": "Excise tax PRA, out of scope."
+    },
+    {
+      "cite": "FR 2026-21924 \u2014 PRA: Treasury International Capital (TIC) B forms",
+      "source": "FR 2026-21924",
+      "type": "Notice",
+      "irc": "not stated",
+      "comment_deadline": "2026-12-28",
+      "url": "https://www.federalregister.gov/documents/2026/10/28/2026-21924/proposed-collection-comment-request",
+      "score": 0,
+      "buckets": [],
+      "plain_english": "Treasury proposes changes to TIC Form B reporting thresholds and instructions.",
+      "why_you_care": "Capital-flow reporting, not tax."
+    },
+    {
+      "cite": "FR 2026-21944 \u2014 Notice of OFAC Sanctions Action",
+      "source": "FR 2026-21944",
+      "type": "Notice",
+      "irc": "not stated",
+      "comment_deadline": null,
+      "url": "https://www.federalregister.gov/documents/2026/10/28/2026-21944/notice-of-ofac-sanctions-action",
+      "score": 0,
+      "buckets": [],
+      "plain_english": "OFAC adds persons and vessels to the SDN List.",
+      "why_you_care": "Sanctions list, no tax angle."
+    },
+    {
+      "cite": "FR 2026-21966 \u2014 IRS Advisory Council public meeting",
+      "source": "FR 2026-21966",
+      "type": "Notice",
+      "irc": "not stated",
+      "comment_deadline": null,
+      "url": "https://www.federalregister.gov/documents/2026/10/28/2026-21966/internal-revenue-service-advisory-council-public-meeting",
+      "score": 0,
+      "buckets": [],
+      "plain_english": "The IRS Advisory Council announces a public meeting.",
+      "why_you_care": "Meeting notice, out of scope."
+    }
+  ]
+}
