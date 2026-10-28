@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RegWatch.App/RegWatch.App.csproj" />
+    <Project Path="src/RegWatch.Core/RegWatch.Core.csproj" />
+    <Project Path="src/RegWatch.Runner/RegWatch.Runner.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RegWatch.Tests/RegWatch.Tests.csproj" />
+  </Folder>
+</Solution>

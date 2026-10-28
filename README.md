@@ -26,7 +26,31 @@ Open `PROFILE.md`, adjust bucket weights / signal terms / guards, save. The next
 run uses it — no need to touch the schedule. Too noisy? Raise cutoffs or add a
 guard. Missing things? Add signal terms or a new bucket.
 
-## Run it manually
+## Local app (since 2026-10-28)
+`src/` holds a .NET 8 app that does the run itself, with no Claude Code session needed.
+It is published to `C:\Users\dunca\Desktop\RegWatch`:
+- **RegWatch.App.exe**: browse every digest (old agent-written ones too), see upcoming
+  comment deadlines across all digests, use **Run now**, **Edit profile**,
+  **Schedule weekly** (Task Scheduler, Mondays 19:00) and **Set API key**
+  (Anthropic key, DPAPI-encrypted in `%APPDATA%\RegWatch`).
+- **RegWatch.Runner.exe**: the headless run that Task Scheduler calls; it logs to `logs/`.
+  `--dry-run` fetches and saves the scoring payload without calling Claude or changing state.
+
+How a run works: the app fetches each new IRB issue's "Highlights of This Issue" section
+(complete, with no truncation) and the Federal Register API (IRS, Treasury, FinCEN). It
+dedups by document number, including across runs via `seen_documents` in STATE.json. One
+Claude call (`claude-opus-5-5`) scores everything against PROFILE.md, with a web search
+for the final-rule sanity check. The app then writes `digests/<date>.md` (plus a `.json`
+sidecar) in the same card format. PROFILE.md is still the only file you edit to calibrate.
+
+Build / test / publish:
+```
+dotnet test RegWatch.slnx
+dotnet publish src/RegWatch.App -c Release -o C:\Users\dunca\Desktop\RegWatch
+dotnet publish src/RegWatch.Runner -c Release -o C:\Users\dunca\Desktop\RegWatch
+```
+
+## Run it manually with the agent (original method)
 From this folder:
 ```
 claude -p "Follow PLAYBOOK.md and write this week's digest."

@@ -1,0 +1,80 @@
+﻿<Window x:Class="RegWatch.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="RegWatch" Height="820" Width="1280" MinWidth="900" MinHeight="560"
+        Background="#F7F7F5" FontFamily="Segoe UI" FontSize="13">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="White" BorderBrush="#E2E2DE" BorderThickness="0,0,0,1" Padding="14,10">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <TextBlock Text="RegWatch" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock x:Name="StatusText" Foreground="#666" TextTrimming="CharacterEllipsis" MaxWidth="560" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="RunButton" Content="Run now" FontWeight="SemiBold" Click="Run_Click" />
+                    <Button x:Name="CancelButton" Content="Cancel" Click="Cancel_Click" Visibility="Collapsed" />
+                    <Button Content="Edit profile" Click="EditProfile_Click" ToolTip="Open PROFILE.md: buckets, rubric and guards" />
+                    <Button Content="Open folder" Click="OpenFolder_Click" />
+                    <Button Content="Schedule weekly" Click="Schedule_Click" ToolTip="Create or update a Windows Task Scheduler task (Mondays 19:00)" />
+                    <Button x:Name="KeyButton" Content="Set API key" Click="SetKey_Click" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="DigestList" Grid.Column="0" BorderThickness="0" Background="White"
+                     SelectionChanged="DigestList_SelectionChanged" HorizontalContentAlignment="Stretch"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="6,6">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding Badge}" Foreground="{Binding BadgeBrush}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding Headline}" Foreground="#666" TextWrapping="Wrap" MaxHeight="34" TextTrimming="CharacterEllipsis" FontSize="12" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#E2E2DE" />
+
+            <TabControl x:Name="Tabs" Grid.Column="2" BorderThickness="0" Background="White">
+                <TabItem Header="Digest">
+                    <wv2:WebView2 x:Name="Viewer" />
+                </TabItem>
+                <TabItem x:Name="DeadlinesTab" Header="Comment deadlines">
+                    <DataGrid x:Name="DeadlineGrid" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EEE" BorderThickness="0"
+                              MouseDoubleClick="DeadlineGrid_MouseDoubleClick">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Closes" Binding="{Binding Deadline, StringFormat=yyyy-MM-dd}" Width="100" />
+                            <DataGridTextColumn Header="Days" Binding="{Binding DaysLeft}" Width="60" />
+                            <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="60" />
+                            <DataGridTextColumn Header="Item" Binding="{Binding Cite}" Width="*" />
+                            <DataGridTextColumn Header="Digest" Binding="{Binding DigestName}" Width="110" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+                <TabItem x:Name="LogTab" Header="Run log">
+                    <TextBox x:Name="LogBox" IsReadOnly="True" FontFamily="Consolas" FontSize="12" BorderThickness="0"
+                             VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Padding="10" />
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>
