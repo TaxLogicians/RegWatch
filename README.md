@@ -12,7 +12,7 @@ dated digest you can skim in a minute.
 - **Internal Revenue Bulletin** — irs.gov/irb (Rev. Ruls, Rev. Procs, Notices, TDs, Announcements)
 - **Federal Register API** — IRS + Treasury (proposed/final regs, notices, **comment deadlines**)
 - **Commentary feeds** (app only) — The Tax Adviser and Journal of Accountancy (TAX category)
-  built in, plus any RSS/Atom feed added under **Sources…** (paste a site address; the app
+  built in, plus any RSS/Atom feed added under **Settings → Sources…** (paste a site address; the app
   finds its feed). Scored like everything else but listed under **In the press**, and linked
   to the IRB/FR card an article discusses. Only headlines, short summaries and links are kept.
   Tax Notes blocks automated readers, so it cannot be added.
@@ -38,8 +38,10 @@ It is published to `C:\Users\dunca\Desktop\RegWatch`:
   comment deadlines across all digests, use **Run now**, **Edit profile** (topic buckets
   as cards with weights and term chips, guards as a list, plus raw text; saves to
   PROFILE.md and leaves untouched entries exactly as written),
-  **Schedule weekly** (Task Scheduler, Mondays 19:00) and **Set API key**
-  (Anthropic key, DPAPI-encrypted in `%APPDATA%\RegWatch`).
+  **Schedule weekly** (Task Scheduler, Mondays 19:00), a **Settings** menu (scoring, advanced
+  scoring settings with DPAPI-encrypted API keys in `%APPDATA%\RegWatch`, sources, theme) and a
+  **Help** menu (the user guide, `docs/GUIDE.md` embedded in the app, also on F1; and About,
+  with the version and folder locations).
 - **RegWatch.Runner.exe**: the headless run that Task Scheduler calls; it logs to `logs/`.
   `--dry-run` fetches and saves the scoring payload without calling Claude or changing state.
 
@@ -47,17 +49,17 @@ How a run works: the app fetches each new IRB issue's "Highlights of This Issue"
 (complete, with no truncation) and the Federal Register API (IRS, Treasury, FinCEN). It
 dedups by document number, including across runs via `seen_documents` in STATE.json. One
 Claude call scores everything against PROFILE.md, with a web search for the final-rule
-sanity check. The **Scoring** dropdown picks how that call is made: **Claude subscription**
+sanity check. **Settings → Scoring** picks how that call is made: **Claude subscription**
 (default; runs `claude -p` and needs the Claude Code CLI signed in with `claude auth login`)
 or **Anthropic API key** (`claude-opus-5-5`, billed per run), or **OpenAI-compatible /
 local AI** (OpenAI, Ollama, LM Studio, Gemini, OpenRouter or any OpenAI-style server; no
-web search). **Advanced…** sets models, keys, base URL, structured-output mode, batching
+web search). **Settings → Advanced scoring settings…** sets models, keys, base URL, structured-output mode, batching
 for small local models, and has a Test connection button. The choice is saved per
 Windows user in `%APPDATA%\RegWatch\settings.json`. The app then writes `digests/<date>.md` (plus a `.json`
 sidecar) in the same card format. PROFILE.md is still the only file you edit to calibrate.
 
 **Theme:** the app uses the Windows 11 look and follows the Windows light/dark setting.
-The **Theme** box in the top bar switches between Match Windows, Light and Dark (saved in
+**Settings → Theme** switches between Match Windows, Light and Dark (saved in
 settings.json); the digest page follows it too.
 
 **Installer:** `installer\build.ps1` publishes the app and runner and builds
@@ -71,7 +73,8 @@ PATH). Uninstalling also removes the weekly scheduled task when it runs that ins
 a frozen copy, so calibrating your own PROFILE.md does not change it). A folder given with
 `--root` or `REGWATCH_ROOT` is never created automatically. With no STATE.json yet, the first
 run reads only the latest 4 IRB issues and the last 30 days of the Federal Register. The version number lives in
-`Directory.Build.props`.
+`Directory.Build.props` (currently `0.1.0-alpha`; the app shows it in the title bar and
+Help → About).
 
 **Icon:** `tools\make-icon.ps1` draws it and writes `src\RegWatch.App\Assets\RegWatch.ico`.
 

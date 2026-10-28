@@ -3,8 +3,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Markdig;
-using Microsoft.Web.WebView2.Core;
 using RegWatch.Core;
 
 namespace RegWatch.App;
@@ -13,12 +11,6 @@ public partial class MainWindow : Window
 {
     private const string TaskName = "RegWatch weekly digest";
 
-    private static readonly MarkdownPipeline Markdown = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions()
-        .UseAutoLinks()
-        .UseSoftlineBreakAsHardlineBreak()
-        .Build();
-
     private readonly string _root;
     private CancellationTokenSource? _runCts;
 
@@ -26,58 +18,69 @@ public partial class MainWindow : Window
     {
         _root = root;
         InitializeComponent();
+        Title = $"RegWatch {AppInfo.DisplayVersion}";
+        VersionBadge.Text = AppInfo.DisplayVersion;
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key != Key.F1) return;
+            Guide_Click(this, e);
+            e.Handled = true;
+        };
         Loaded += async (_, _) =>
         {
-            await InitViewerAsync();
+            await MarkdownView.InitAsync(Viewer);
             Refresh();
         };
     }
 
     private string DigestsDir => Path.Combine(_root, "digests");
 
-    private async Task InitViewerAsync()
-    {
-        // Keep WebView2's cache out of the publish folder.
-        var dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RegWatch", "WebView2");
-        var env = await CoreWebView2Environment.CreateAsync(userDataFolder: dataDir);
-        await Viewer.EnsureCoreWebView2Async(env);
+    private void Settings_Click(object sender, RoutedEventArgs e) => OpenBelow(SettingsMenu, SettingsButton);
 
-        // Links open in the default browser rather than inside the app.
-        Viewer.CoreWebView2.NavigationStarting += (_, e) =>
-        {
-            if (e.Uri.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            {
-                e.Cancel = true;
-                OpenExternal(e.Uri);
-            }
-        };
-        Viewer.CoreWebView2.NewWindowRequested += (_, e) =>
-        {
-            e.Handled = true;
-            OpenExternal(e.Uri);
-        };
-        ApplyViewerTheme(AppSettings.Load().Theme);
+    private void Help_Click(object sender, RoutedEventArgs e) => OpenBelow(HelpMenu, HelpButton);
+
+    // The drop-down buttons open their menu on a normal click, not just a right-click.
+    private static void OpenBelow(ContextMenu menu, UIElement button)
+    {
+        menu.PlacementTarget = button;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        menu.IsOpen = true;
     }
 
-    // The digest page's CSS picks light or dark from prefers-color-scheme, which this sets.
-    private void ApplyViewerTheme(AppTheme theme)
+    private HelpWindow? _guide;
+
+    private void Guide_Click(object sender, RoutedEventArgs e)
     {
-        if (Viewer.CoreWebView2 is null) return;
-        Viewer.CoreWebView2.Profile.PreferredColorScheme = theme switch
+        // One guide window, kept beside the main window (not modal) so it can stay open while working.
+        if (_guide is { IsLoaded: true })
         {
-            AppTheme.Light => CoreWebView2PreferredColorScheme.Light,
-            AppTheme.Dark => CoreWebView2PreferredColorScheme.Dark,
-            _ => CoreWebView2PreferredColorScheme.Auto,
-        };
+            _guide.Activate();
+            return;
+        }
+        _guide = new HelpWindow { Owner = this };
+        _guide.Show();
     }
 
-    private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void About_Click(object sender, RoutedEventArgs e) =>
+        MessageBox.Show(this,
+            $"RegWatch {AppInfo.DisplayVersion}\n\n" +
+            "Weekly IRS / Treasury triage digest for US foreign-trust and international tax work. " +
+            "Triage only, not tax advice: verify every item against its primary source.\n\n" +
+            $"Data folder: {_root}\n" +
+            $"Settings: {AppSettings.SettingsPath}\n" +
+            $"Scoring: {ScorerFactory.Describe(AppSettings.Load().Scorer)}\n" +
+            $".NET: {Environment.Version} · Windows {Environment.OSVersion.Version}\n\n" +
+            "Press Ctrl+C to copy these details.",
+            "About RegWatch", MessageBoxButton.OK, MessageBoxImage.Information);
+
+    private void ThemeItem_Click(object sender, RoutedEventArgs e)
     {
-        if (_loadingSettings || ThemeBox.SelectedItem is not ComboBoxItem { Tag: string tag }) return;
+        if (sender is not MenuItem { Tag: string tag }) return;
         var theme = Enum.Parse<AppTheme>(tag);
         (AppSettings.Load() with { Theme = theme }).Save();
         Theme.Apply(theme);
-        ApplyViewerTheme(theme);
+        MarkdownView.ApplyTheme(Viewer, theme);
+        CheckOnly(ThemeMenu, tag);
     }
 
     private void Refresh(string? selectPath = null)
@@ -94,30 +97,32 @@ public partial class MainWindow : Window
         var state = new StateStore(Path.Combine(_root, "STATE.json")).Load();
         var settings = AppSettings.Load();
         var ready = ScorerFactory.Problem(settings) ?? "ready to run";
-        StatusText.Text = $"Last run {state.LastRun ?? "never"} · IRB through {state.LastIrbIssue ?? "–"} · FR from {state.LastFedRegDate ?? "–"} · {ready}";
+        StatusText.Text = $"Last run {state.LastRun ?? "never"} · IRB through {state.LastIrbIssue ?? "–"} · FR from {state.LastFedRegDate ?? "–"} · " +
+                          $"scoring via {ScorerFactory.Describe(settings.Scorer)}, {ready}";
         StatusText.ToolTip = state.LastRunSummary;
 
-        _loadingSettings = true;
-        ScorerBox.SelectedItem = ScorerBox.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == settings.Scorer.ToString());
-        ThemeBox.SelectedItem = ThemeBox.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == settings.Theme.ToString());
-        _loadingSettings = false;
+        CheckOnly(ScoringMenu, settings.Scorer.ToString());
+        CheckOnly(ThemeMenu, settings.Theme.ToString());
     }
 
-    private bool _loadingSettings;
-
-    private void ScorerBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    // Radio-style ticks in a submenu: only the item whose Tag matches is checked.
+    private static void CheckOnly(MenuItem menu, string tag)
     {
-        if (_loadingSettings || ScorerBox.SelectedItem is not ComboBoxItem { Tag: string tag }) return;
-        var updated = AppSettings.Load() with { Scorer = Enum.Parse<ScorerKind>(tag) };
-        updated.Save();
+        foreach (var item in menu.Items.OfType<MenuItem>())
+            item.IsChecked = (string)item.Tag == tag;
+    }
+
+    private void ScorerItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string tag }) return;
+        (AppSettings.Load() with { Scorer = Enum.Parse<ScorerKind>(tag) }).Save();
         Refresh((DigestList.SelectedItem as DigestRow)?.Summary.Path);
     }
 
     private void DigestList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (DigestList.SelectedItem is not DigestRow row || Viewer.CoreWebView2 is null) return;
-        var html = Markdig.Markdown.ToHtml(File.ReadAllText(row.Summary.Path), Markdown);
-        Viewer.NavigateToString(Page(html));
+        MarkdownView.ShowDigest(Viewer, File.ReadAllText(row.Summary.Path));
         Tabs.SelectedIndex = 0;
     }
 
@@ -224,29 +229,8 @@ public partial class MainWindow : Window
         if (DeadlineGrid.SelectedItem is DeadlineRow { Entry.Url.Length: > 0 } row) OpenExternal(row.Entry.Url);
     }
 
-    private static void OpenExternal(string target) =>
-        Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+    private static void OpenExternal(string target) => MarkdownView.OpenExternal(target);
 
-    private static string Page(string body) => $$"""
-        <!doctype html><html><head><meta charset="utf-8"><style>
-        :root { color-scheme: light dark;
-          --bg: #fff; --text: #1f1f1d; --rule: #e2e2de; --quote-bg: #f4f4f1; --quote-bar: #c9c9c3;
-          --quote-text: #555; --link: #1a5fb4; --code-bg: #f0f0ec; --cell: #ddd; }
-        @media (prefers-color-scheme: dark) {
-          :root { --bg: #1c1c1c; --text: #e6e6e3; --rule: #3a3a38; --quote-bg: #262625; --quote-bar: #55554f;
-            --quote-text: #b8b8b2; --link: #8ab4f8; --code-bg: #2c2c2a; --cell: #3a3a38; }
-        }
-        html, body { background: var(--bg); }
-        body { font: 14px/1.55 "Segoe UI", sans-serif; color: var(--text); max-width: 860px; margin: 24px 32px 64px; }
-        h1 { font-size: 22px; margin-bottom: 4px; }
-        h2 { font-size: 16px; margin-top: 28px; padding-bottom: 4px; border-bottom: 1px solid var(--rule); }
-        h3 { font-size: 14px; margin: 20px 0 4px; }
-        blockquote { margin: 12px 0; padding: 6px 12px; background: var(--quote-bg); border-left: 3px solid var(--quote-bar); color: var(--quote-text); }
-        a { color: var(--link); word-break: break-all; }
-        code { background: var(--code-bg); padding: 1px 4px; border-radius: 3px; }
-        table { border-collapse: collapse; } td, th { border: 1px solid var(--cell); padding: 4px 8px; }
-        </style></head><body>{{body}}</body></html>
-        """;
 
     private sealed class DigestRow(DigestSummary summary)
     {

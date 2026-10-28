@@ -18,6 +18,6 @@ foreach ($project in 'RegWatch.App', 'RegWatch.Runner') {
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish $project failed" }
 }
 
-& $iscc "/DAppVersion=$version" (Join-Path $here 'RegWatch.iss')
+& $iscc "/DAppVersion=$version" "/DNumericVersion=$(($version -split '-')[0])" (Join-Path $here 'RegWatch.iss')
 if ($LASTEXITCODE -ne 0) { throw 'ISCC failed' }
 Get-Item (Join-Path $here "Output\RegWatch-Setup-$version.exe")

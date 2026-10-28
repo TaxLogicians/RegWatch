@@ -14,6 +14,7 @@
     <!-- Seeds a new data folder on first run (see App.CreateDataFolder). A frozen copy, so
          calibrating your own PROFILE.md does not change what new installs start with. -->
     <Content Include="Defaults\PROFILE.md" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="..\..\docs\GUIDE.md" LogicalName="RegWatch.Guide.md" />
   </ItemGroup>
 
   <ItemGroup>

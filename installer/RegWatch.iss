@@ -3,7 +3,11 @@
 ; (%USERPROFILE%\RegWatch: PROFILE.md, digests, STATE.json) is separate and never touched here.
 
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "0.1.0-alpha"
+#endif
+; Windows file properties need a plain number; the label (-alpha) stays in AppVersion.
+#ifndef NumericVersion
+  #define NumericVersion "0.1.0"
 #endif
 #define AppName "RegWatch"
 #define AppExe "RegWatch.App.exe"
@@ -14,6 +18,7 @@ AppId={{68EDCDEA-5CED-4912-BA71-A722AA8A1565}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
+VersionInfoVersion={#NumericVersion}
 AppPublisher=Maubec-Deeds
 DefaultDirName={autopf}\{#AppName}
 DisableProgramGroupPage=yes

@@ -195,8 +195,15 @@ public class OpenAiCompatibleScorerTests
     {
         using var http = RunPipeline.CreateHttpClient();
 
-        Assert.Matches(@"^\d+\.\d+\.\d+$", RunPipeline.Version);
-        Assert.StartsWith($"RegWatch/{RunPipeline.Version} ", http.DefaultRequestHeaders.UserAgent.ToString());
+        Assert.Matches(@"^\d+\.\d+\.\d+$", AppInfo.Version);
+        Assert.StartsWith($"RegWatch/{AppInfo.Version} ", http.DefaultRequestHeaders.UserAgent.ToString());
+    }
+
+    [Fact]
+    public void DisplayVersion_KeepsThePreReleaseLabel_WithoutTheCommitHash()
+    {
+        Assert.StartsWith(AppInfo.Version, AppInfo.DisplayVersion);
+        Assert.DoesNotContain("+", AppInfo.DisplayVersion);
     }
 
     private sealed class FakeHandler(Func<HttpRequestMessage, string> respond, HttpStatusCode status = HttpStatusCode.OK) : HttpMessageHandler

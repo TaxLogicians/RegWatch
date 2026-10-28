@@ -22,36 +22,62 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="RegWatch" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="RegWatch" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" CornerRadius="4" Padding="6,1"
+                            Margin="10,3,0,0" VerticalAlignment="Center" ToolTip="Early test version: expect rough edges">
+                        <TextBlock x:Name="VersionBadge" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </Border>
+                </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button x:Name="RunButton" Content="Run now" FontWeight="SemiBold" Click="Run_Click" />
                     <Button x:Name="CancelButton" Content="Cancel" Click="Cancel_Click" Visibility="Collapsed" />
                     <Button Content="Edit profile" Click="EditProfile_Click" ToolTip="Edit topic buckets, weights and guards (saved to PROFILE.md)" />
-                    <Button Content="Sources…" Click="Sources_Click" ToolTip="Commentary feeds: The Tax Adviser, JofA, and your own" />
                     <Button Content="Open folder" Click="OpenFolder_Click" />
                     <Button Content="Schedule weekly" Click="Schedule_Click" ToolTip="Create or update a Windows Task Scheduler task (Mondays 19:00)" />
+                    <Button x:Name="SettingsButton" Click="Settings_Click" ToolTip="Scoring, commentary sources and theme">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Settings" />
+                            <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"
+                                       VerticalAlignment="Center" Margin="8,1,0,0" />
+                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="SettingsMenu">
+                                <MenuItem x:Name="ScoringMenu" Header="Scoring">
+                                    <MenuItem Header="Claude subscription (Claude Code)" Tag="ClaudeCode" Click="ScorerItem_Click" />
+                                    <MenuItem Header="Anthropic API key" Tag="AnthropicApi" Click="ScorerItem_Click" />
+                                    <MenuItem Header="OpenAI-compatible / local AI" Tag="OpenAiCompatible" Click="ScorerItem_Click" />
+                                </MenuItem>
+                                <MenuItem Header="Advanced scoring settings…" Click="Advanced_Click"
+                                          ToolTip="Models, API keys, OpenAI or local AI servers, connection test" />
+                                <MenuItem Header="Sources…" Click="Sources_Click"
+                                          ToolTip="Commentary feeds: The Tax Adviser, JofA, and your own" />
+                                <Separator />
+                                <MenuItem x:Name="ThemeMenu" Header="Theme">
+                                    <MenuItem Header="Match Windows" Tag="System" Click="ThemeItem_Click" />
+                                    <MenuItem Header="Light" Tag="Light" Click="ThemeItem_Click" />
+                                    <MenuItem Header="Dark" Tag="Dark" Click="ThemeItem_Click" />
+                                </MenuItem>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Button x:Name="HelpButton" Click="Help_Click" ToolTip="User guide and version (F1 opens the guide)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Help" />
+                            <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"
+                                       VerticalAlignment="Center" Margin="8,1,0,0" />
+                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="HelpMenu">
+                                <MenuItem Header="User guide" InputGestureText="F1" Click="Guide_Click" />
+                                <MenuItem Header="About RegWatch" Click="About_Click" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
                 </StackPanel>
 
-                <TextBlock x:Name="StatusText" Grid.Row="1" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"
-                           VerticalAlignment="Center" Margin="0,8,12,0" />
-                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                    <TextBlock Text="Scoring:" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,6,0" />
-                    <ComboBox x:Name="ScorerBox" Width="270" VerticalContentAlignment="Center"
-                              SelectionChanged="ScorerBox_SelectionChanged">
-                        <ComboBoxItem Content="Claude subscription (Claude Code)" Tag="ClaudeCode" />
-                        <ComboBoxItem Content="Anthropic API key" Tag="AnthropicApi" />
-                        <ComboBoxItem Content="OpenAI-compatible / local AI" Tag="OpenAiCompatible" />
-                    </ComboBox>
-                    <Button Content="Advanced…" Click="Advanced_Click"
-                            ToolTip="Scoring settings: models, API keys, OpenAI or local AI servers, connection test" />
-                    <TextBlock Text="Theme:" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="18,0,6,0" />
-                    <ComboBox x:Name="ThemeBox" Width="160" VerticalContentAlignment="Center"
-                              ToolTip="Light or dark colours" SelectionChanged="ThemeBox_SelectionChanged">
-                        <ComboBoxItem Content="Match Windows" Tag="System" />
-                        <ComboBoxItem Content="Light" Tag="Light" />
-                        <ComboBoxItem Content="Dark" Tag="Dark" />
-                    </ComboBox>
-                </StackPanel>
+                <TextBlock x:Name="StatusText" Grid.Row="1" Grid.ColumnSpan="2" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           TextTrimming="CharacterEllipsis" Margin="0,6,0,0" />
             </Grid>
         </Border>
 
