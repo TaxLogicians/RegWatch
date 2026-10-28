@@ -97,8 +97,7 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
         {
             log?.Report("Reading the IRB index…");
             var listed = await irb.ListIssuesAsync(ct);
-            var last = state.LastIrbIssue;
-            var fresh = listed.Where(i => last is null || IssueComparer.Instance.Compare(i, last) > 0).ToList();
+            var fresh = IrbClient.SelectNew(listed, state.LastIrbIssue);
             foreach (var issue in fresh)
             {
                 try

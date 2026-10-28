@@ -25,6 +25,18 @@ public sealed partial class IrbClient(HttpClient http)
         return new IrbIssue(issue, url, contents, highlights);
     }
 
+    /// <summary>With no bookmark (first run, new data folder), how many of the latest issues to read: about the 30 days the Federal Register side covers.</summary>
+    public const int FirstRunIssues = 4;
+
+    /// <summary>Issues after the bookmark, oldest first; without one, only the latest <see cref="FirstRunIssues"/> rather than the whole year.</summary>
+    public static List<string> SelectNew(IEnumerable<string> listed, string? lastIssue)
+    {
+        var ordered = listed.OrderBy(i => i, IssueComparer.Instance).ToList();
+        return lastIssue is null
+            ? ordered.TakeLast(FirstRunIssues).ToList()
+            : ordered.Where(i => IssueComparer.Instance.Compare(i, lastIssue) > 0).ToList();
+    }
+
     public static IReadOnlyList<string> ParseIssueList(string html) =>
         IssueLink().Matches(html)
             .Select(m => m.Groups[1].Value)

@@ -15,10 +15,18 @@ public partial class App : Application
         Theme.Apply(AppSettings.Load().Theme);
 
         var root = RunPipeline.DefaultRoot(rootArg);
-        if (!File.Exists(Path.Combine(root, "PROFILE.md")) && !CreateDataFolder(root))
+        if (!File.Exists(Path.Combine(root, "PROFILE.md")))
         {
-            Shutdown(1);
-            return;
+            // Only the default location is set up automatically; a folder named with --root or
+            // REGWATCH_ROOT that has no profile is more likely a typo than a new data folder.
+            var explicitRoot = rootArg is not null || Environment.GetEnvironmentVariable("REGWATCH_ROOT") is not null;
+            if (explicitRoot || !CreateDataFolder(root))
+            {
+                if (explicitRoot)
+                    MessageBox.Show($"No PROFILE.md in {root}.\n\nCheck the --root argument or the REGWATCH_ROOT variable.", "RegWatch");
+                Shutdown(1);
+                return;
+            }
         }
 
         new MainWindow(root).Show();
@@ -30,7 +38,8 @@ public partial class App : Application
         var template = Path.Combine(AppContext.BaseDirectory, "Defaults", "PROFILE.md");
         if (!File.Exists(template))
         {
-            MessageBox.Show($"No PROFILE.md in {root}.\n\nStart RegWatch with --root <folder> or set REGWATCH_ROOT.", "RegWatch");
+            MessageBox.Show($"No PROFILE.md in {root}, and no default profile was found next to the app ({template}).\n\n" +
+                            "Reinstall RegWatch, or start it with --root <folder>.", "RegWatch");
             return false;
         }
 
@@ -40,8 +49,16 @@ public partial class App : Application
             "Set up RegWatch", MessageBoxButton.OKCancel, MessageBoxImage.Question);
         if (answer != MessageBoxResult.OK) return false;
 
-        Directory.CreateDirectory(Path.Combine(root, "digests"));
-        File.Copy(template, Path.Combine(root, "PROFILE.md"));
-        return true;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "digests"));
+            File.Copy(template, Path.Combine(root, "PROFILE.md"));
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
+        {
+            MessageBox.Show($"Could not create {root}:\n{ex.Message}", "RegWatch", MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
+        }
     }
 }

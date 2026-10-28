@@ -20,6 +20,25 @@ public class FetchParsingTests
     }
 
     [Fact]
+    public void IrbSelectNew_WithoutBookmark_TakesOnlyTheLatestIssues()
+    {
+        var issues = IrbClient.ParseIssueList(Fixture("irb-index.html"));
+
+        var fresh = IrbClient.SelectNew(issues, lastIssue: null);
+
+        Assert.Equal(IrbClient.FirstRunIssues, fresh.Count);
+        Assert.Equal(issues.TakeLast(IrbClient.FirstRunIssues), fresh);
+    }
+
+    [Fact]
+    public void IrbSelectNew_WithBookmark_TakesEverythingAfterIt()
+    {
+        var fresh = IrbClient.SelectNew(["2026-40", "2026-44", "2026-42", "2026-43"], "2026-42");
+
+        Assert.Equal(["2026-43", "2026-44"], fresh);
+    }
+
+    [Fact]
     public void IrbIssue_ExtractsContentsAndHighlights()
     {
         var (contents, highlights) = IrbClient.ExtractHighlights(Fixture("irb-2026-44.html"));

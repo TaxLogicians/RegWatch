@@ -11,8 +11,9 @@
 
   <ItemGroup>
     <Resource Include="Assets\RegWatch.ico" />
-    <!-- Seeds a new data folder on first run (see App.CreateDataFolder). -->
-    <Content Include="..\..\PROFILE.md" Link="Defaults\PROFILE.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Seeds a new data folder on first run (see App.CreateDataFolder). A frozen copy, so
+         calibrating your own PROFILE.md does not change what new installs start with. -->
+    <Content Include="Defaults\PROFILE.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

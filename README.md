@@ -66,7 +66,10 @@ settings.json); the digest page follows it too.
 admin prompt (or for all users), adds a Start menu shortcut and an uninstaller, and checks
 for the .NET 10 Desktop Runtime. Uninstalling also removes the weekly scheduled task but
 never touches the data folder. On first start the app offers to create
-`%USERPROFILE%\RegWatch` with the default PROFILE.md. The version number lives in
+`%USERPROFILE%\RegWatch` with the default profile (`src\RegWatch.App\Defaults\PROFILE.md`,
+a frozen copy, so calibrating your own PROFILE.md does not change it). A folder given with
+`--root` or `REGWATCH_ROOT` is never created automatically. With no STATE.json yet, the first
+run reads only the latest 4 IRB issues and the last 30 days of the Federal Register. The version number lives in
 `Directory.Build.props`.
 
 **Icon:** `tools\make-icon.ps1` draws it and writes `src\RegWatch.App\Assets\RegWatch.ico`.
