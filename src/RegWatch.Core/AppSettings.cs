@@ -62,6 +62,8 @@ public sealed record AppSettings
 
     public ScorerKind Scorer { get; init; } = ScorerKind.ClaudeCode;
 
+    /// <summary>Lenient: an unknown value (hand edit, newer version) falls back to System instead of failing the whole file.</summary>
+    [JsonConverter(typeof(LenientEnumConverter<AppTheme>))]
     public AppTheme Theme { get; init; } = AppTheme.System;
 
     /// <summary>Optional full path to claude.exe when it is not on PATH.</summary>
@@ -87,9 +89,7 @@ public sealed record AppSettings
     {
         try
         {
-            return File.Exists(SettingsPath)
-                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath), Options) ?? new()
-                : new();
+            return File.Exists(SettingsPath) ? Parse(File.ReadAllText(SettingsPath)) : new();
         }
         catch (JsonException)
         {
@@ -100,8 +100,31 @@ public sealed record AppSettings
     public void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-        File.WriteAllText(SettingsPath, JsonSerializer.Serialize(this, Options));
+        File.WriteAllText(SettingsPath, ToJson());
     }
+
+    internal static AppSettings Parse(string json) => JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new();
+
+    internal string ToJson() => JsonSerializer.Serialize(this, Options);
+}
+
+/// <summary>Reads an enum by name (any case) or number, returning the default for anything unrecognised.</summary>
+public sealed class LenientEnumConverter<T> : JsonConverter<T> where T : struct, Enum
+{
+    public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String
+            && Enum.TryParse<T>(reader.GetString(), ignoreCase: true, out var named)
+            && Enum.IsDefined(named))
+            return named;
+        if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var n) && Enum.IsDefined(typeof(T), n))
+            return (T)Enum.ToObject(typeof(T), n);
+        reader.Skip();
+        return default;
+    }
+
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
 }
 
 public static class ScorerFactory

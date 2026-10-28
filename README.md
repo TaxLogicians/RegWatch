@@ -64,8 +64,9 @@ settings.json); the digest page follows it too.
 `installer\Output\RegWatch-Setup-<version>.exe` with Inno Setup 6
 (`winget install JRSoftware.InnoSetup`). Setup installs for the current user without an
 admin prompt (or for all users), adds a Start menu shortcut and an uninstaller, and checks
-for the .NET 10 Desktop Runtime. Uninstalling also removes the weekly scheduled task but
-never touches the data folder. On first start the app offers to create
+for the .NET 10 Desktop Runtime (Program Files, `DOTNET_ROOT`, a per-user install, or `dotnet` on
+PATH). Uninstalling also removes the weekly scheduled task when it runs that install's runner
+(a task made from another copy is left alone), and never touches the data folder. On first start the app offers to create
 `%USERPROFILE%\RegWatch` with the default profile (`src\RegWatch.App\Defaults\PROFILE.md`,
 a frozen copy, so calibrating your own PROFILE.md does not change it). A folder given with
 `--root` or `REGWATCH_ROOT` is never created automatically. With no STATE.json yet, the first

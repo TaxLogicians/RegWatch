@@ -21,13 +21,16 @@ public sealed class RunPipeline(string root, HttpClient http, IScorer scorer, IR
         ?? Environment.GetEnvironmentVariable("REGWATCH_ROOT")
         ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "RegWatch");
 
+    /// <summary>The project version from Directory.Build.props, e.g. "1.0.0".</summary>
+    public static string Version { get; } = typeof(RunPipeline).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+
     public static HttpClient CreateHttpClient()
     {
         // Feeds are often served gzip/brotli-compressed.
         var handler = new HttpClientHandler { AutomaticDecompression = System.Net.DecompressionMethods.All };
         var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
         // irs.gov rejects requests with no user agent.
-        http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("RegWatch", "1.0"));
+        http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("RegWatch", Version));
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(+local triage digest)"));
         return http;
     }

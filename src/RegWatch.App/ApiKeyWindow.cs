@@ -17,6 +17,7 @@ public sealed class ApiKeyWindow : Window
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         SetResourceReference(BackgroundProperty, "ApplicationBackgroundBrush");
+        SetResourceReference(ForegroundProperty, "TextFillColorPrimaryBrush");
 
         var envNote = store.EnvVarIsSet
             ? $"\n\n{store.EnvVar} is set in your environment and takes precedence over a saved key."

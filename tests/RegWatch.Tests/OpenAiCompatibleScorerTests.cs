@@ -164,6 +164,41 @@ public class OpenAiCompatibleScorerTests
         Assert.Equal(StructuredOutputMode.JsonSchema, old.OpenAi.StructuredOutput);
     }
 
+    [Fact]
+    public void Settings_WithoutTheme_DefaultToMatchWindows() =>
+        Assert.Equal(AppTheme.System, AppSettings.Parse("""{"Scorer":"AnthropicApi"}""").Theme);
+
+    [Fact]
+    public void Settings_Theme_RoundTripsByName()
+    {
+        var json = (new AppSettings() with { Theme = AppTheme.Dark }).ToJson();
+
+        Assert.Contains("\"Theme\": \"Dark\"", json);
+        Assert.Equal(AppTheme.Dark, AppSettings.Parse(json).Theme);
+    }
+
+    [Theory]
+    [InlineData("\"Auto\"")]
+    [InlineData("42")]
+    [InlineData("null")]
+    public void Settings_UnknownTheme_KeepsTheOtherSettings(string theme)
+    {
+        var loaded = AppSettings.Parse($$"""{"Scorer":"OpenAiCompatible","ClaudeCodeModel":"sonnet","Theme":{{theme}}}""");
+
+        Assert.Equal(AppTheme.System, loaded.Theme);
+        Assert.Equal(ScorerKind.OpenAiCompatible, loaded.Scorer);
+        Assert.Equal("sonnet", loaded.ClaudeCodeModel);
+    }
+
+    [Fact]
+    public void UserAgent_CarriesTheProjectVersion()
+    {
+        using var http = RunPipeline.CreateHttpClient();
+
+        Assert.Matches(@"^\d+\.\d+\.\d+$", RunPipeline.Version);
+        Assert.StartsWith($"RegWatch/{RunPipeline.Version} ", http.DefaultRequestHeaders.UserAgent.ToString());
+    }
+
     private sealed class FakeHandler(Func<HttpRequestMessage, string> respond, HttpStatusCode status = HttpStatusCode.OK) : HttpMessageHandler
     {
         public List<(string Uri, string? Authorization, string Body)> Requests { get; } = [];

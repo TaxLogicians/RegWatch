@@ -43,18 +43,50 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopico
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
-[UninstallRun]
-; Removes the task the app's Schedule weekly button creates; harmless if it was never created.
-Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN ""{#TaskName}"" /F"; Flags: runhidden; RunOnceId: "DeleteWeeklyTask"
-
 [Code]
-// RegWatch is framework-dependent: it needs the .NET 10 Desktop Runtime (x64).
-function DesktopRuntimeInstalled: Boolean;
+// Runs a command through cmd.exe and returns its output (empty if it failed).
+function CommandOutput(const Command: String): String;
+var
+  OutFile: String;
+  Output: AnsiString;
+  ResultCode: Integer;
+begin
+  Result := '';
+  OutFile := ExpandConstant('{tmp}\regwatch-cmd.txt');
+  if Exec(ExpandConstant('{cmd}'), '/C ' + Command + ' > "' + OutFile + '" 2>nul', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+     and (ResultCode = 0) and LoadStringFromFile(OutFile, Output) then
+    Result := String(Output);
+  DeleteFile(OutFile);
+end;
+
+function RuntimeIn(const DotnetDir: String): Boolean;
 var
   FindRec: TFindRec;
 begin
-  Result := FindFirst(ExpandConstant('{commonpf64}\dotnet\shared\Microsoft.WindowsDesktop.App\10.*'), FindRec);
+  Result := (DotnetDir <> '') and FindFirst(AddBackslash(DotnetDir) + 'shared\Microsoft.WindowsDesktop.App\10.*', FindRec);
   if Result then FindClose(FindRec);
+end;
+
+// RegWatch is framework-dependent: it needs the .NET 10 Desktop Runtime (x64), wherever it is installed.
+function DesktopRuntimeInstalled: Boolean;
+begin
+  Result := RuntimeIn(ExpandConstant('{commonpf64}\dotnet'))
+    or RuntimeIn(GetEnv('DOTNET_ROOT'))
+    or RuntimeIn(ExpandConstant('{localappdata}\Microsoft\dotnet'))
+    or (Pos('Microsoft.WindowsDesktop.App 10.', CommandOutput('dotnet --list-runtimes')) > 0);
+end;
+
+// Removes the task the app's Schedule weekly button creates, but only when it runs this
+// install's runner, so a task made from another copy of RegWatch is left alone.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Task: String;
+  ResultCode: Integer;
+begin
+  if CurUninstallStep <> usUninstall then Exit;
+  Task := CommandOutput('schtasks /Query /TN "{#TaskName}" /V /FO LIST');
+  if Pos(Lowercase(ExpandConstant('{app}\RegWatch.Runner.exe')), Lowercase(Task)) > 0 then
+    Exec(ExpandConstant('{sys}\schtasks.exe'), '/Delete /TN "{#TaskName}" /F', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 function InitializeSetup: Boolean;
