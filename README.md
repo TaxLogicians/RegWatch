@@ -38,7 +38,7 @@ guard. Missing things? Add signal terms or a new bucket.
 
 ## Local app (since 2026-10-28)
 `src/` holds a .NET 10 app that does the run itself, with no Claude Code session needed.
-It is published to `C:\Users\dunca\Desktop\RegWatch`:
+It is published to a folder of your choice (e.g. `%USERPROFILE%\Desktop\RegWatch`):
 - **RegWatch.App.exe**: browse every digest (old agent-written ones too), see upcoming
   comment deadlines across all digests, use **Run now**, **Edit profile** (topic buckets
   as cards with weights and term chips, guards as a list, plus raw text; saves to
@@ -98,8 +98,8 @@ explains this.
 Build / test / publish:
 ```
 dotnet test RegWatch.slnx
-dotnet publish src/RegWatch.App -c Release -o C:\Users\dunca\Desktop\RegWatch
-dotnet publish src/RegWatch.Runner -c Release -o C:\Users\dunca\Desktop\RegWatch
+dotnet publish src/RegWatch.App -c Release -o $env:USERPROFILE\Desktop\RegWatch
+dotnet publish src/RegWatch.Runner -c Release -o $env:USERPROFILE\Desktop\RegWatch
 ```
 
 ## Run it manually with the agent (original method)

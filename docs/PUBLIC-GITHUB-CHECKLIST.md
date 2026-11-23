@@ -1,8 +1,8 @@
 # Checklist: making RegWatch a public GitHub repo
 
-The repo is currently **private** (`Maubec-Deeds/RegWatch`). Work through this before
-changing that. Anything published stays public: forks, caches and archives keep a copy
-even if the repo is made private again later.
+The repo is now **public** at `TaxLogicians/RegWatch` (moved from the private
+`Maubec-Deeds/RegWatch`). Anything published stays public: forks, caches and archives keep
+a copy even if the repo is made private again later.
 
 ## Already checked (2026-10-28)
 
@@ -19,9 +19,9 @@ even if the repo is made private again later.
 - [ ] **Licence.** No LICENSE file exists, which means "all rights reserved": others can
       read the code but not legally reuse it. Common choices: MIT (anyone may reuse, keep
       the notice), Apache-2.0 (MIT plus a patent grant), GPL-3.0 (changes must stay open).
-- [ ] **Personal files.** Remove or rewrite before publishing:
-  - `HANDOFF.md`: session notes with local paths and your plan/scoring setup.
-  - `README.md` lines 36 and 62–63: `C:\Users\dunca\Desktop\RegWatch` paths.
+- [x] **Local paths.** Home-folder paths in `README.md` and `HANDOFF.md` now use
+      `%USERPROFILE%` (2026-11-23). Older commits still contain them.
+- [ ] **`HANDOFF.md`:** session notes describing your plan/scoring setup. Keep, trim or remove.
 - [ ] **Your data.** `PROFILE.md`, `STATE.json` and `digests/` are your working data and
       show your practice focus. Either keep them (useful as a worked example) or move the
       data folder out of the repo (`REGWATCH_ROOT`) and keep only a generic PROFILE.md.
@@ -58,8 +58,5 @@ even if the repo is made private again later.
 
 ## The switch
 
-When everything above is done:
-
-```
-gh repo edit Maubec-Deeds/RegWatch --visibility public --accept-visibility-change-consequences
-```
+Done: the repo was moved to `TaxLogicians/RegWatch` and made public. The in-app update
+check (`UpdateCheck.Repo`) points there.

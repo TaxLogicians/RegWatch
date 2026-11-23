@@ -17,7 +17,7 @@ merged and deleted.
 | `71b361c` | OpenAI-compatible / local AI scoring + Advanced… settings window |
 | `db0bec4` | Commentary feeds (The Tax Adviser, JofA TAX, custom) + "In the press" digest section |
 
-- Published build: `C:\Users\dunca\Desktop\RegWatch` (`RegWatch.App.exe`, `RegWatch.Runner.exe`).
+- Published build: `%USERPROFILE%\Desktop\RegWatch` (`RegWatch.App.exe`, `RegWatch.Runner.exe`).
 - Tests: 65 xUnit tests, all passing (`dotnet test RegWatch.slnx`).
 - This user's scoring setting: **Claude subscription (Claude Code, opus)**, in
   `%APPDATA%\RegWatch\settings.json`. No Anthropic API key exists on this machine.
@@ -57,8 +57,8 @@ test run were domestic and scored 0); covered by unit tests.
 
 - Build / publish (kill the running app first or the publish fails on locked files):
   ```
-  dotnet publish src/RegWatch.App -c Release -o C:\Users\dunca\Desktop\RegWatch
-  dotnet publish src/RegWatch.Runner -c Release -o C:\Users\dunca\Desktop\RegWatch
+  dotnet publish src/RegWatch.App -c Release -o $env:USERPROFILE\Desktop\RegWatch
+  dotnet publish src/RegWatch.Runner -c Release -o $env:USERPROFILE\Desktop\RegWatch
   ```
 - Safe experiments: `RegWatch.Runner.exe --dry-run` (fetch only, writes nothing to state),
   or `--root <scratch folder>` with a copied PROFILE.md and a hand-written STATE.json.

@@ -8,7 +8,7 @@ public sealed record UpdateInfo(bool Available, string? LatestVersion, string? U
 /// <summary>Compares this build with the latest GitHub release of RegWatch.</summary>
 public static class UpdateCheck
 {
-    public const string Repo = "Maubec-Deeds/RegWatch";
+    public const string Repo = "TaxLogicians/RegWatch";
     public const string ReleasesPage = $"https://github.com/{Repo}/releases";
 
     private const string PrivateRepoMessage =
